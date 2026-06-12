@@ -110,6 +110,28 @@
     </div>
 
     <div class="card">
+      <h2>😴 Sono</h2>
+      <div class="row">
+        <div>
+          <label>Dormi às</label>
+          <input type="time" id="sonoDormiu" oninput="setSono('dormiu', this.value)">
+        </div>
+        <div>
+          <label>Acordei às</label>
+          <input type="time" id="sonoAcordou" oninput="setSono('acordou', this.value)">
+        </div>
+      </div>
+      <div class="muted" id="sonoHoras" style="margin-top:6px;"></div>
+      <label style="margin-top:8px;">Qualidade do sono</label>
+      <select id="sonoQualidade" onchange="setSono('qualidade', this.value)">
+        <option value="">Selecione...</option>
+        <option value="boa">Boa</option>
+        <option value="regular">Regular</option>
+        <option value="ruim">Ruim</option>
+      </select>
+    </div>
+
+    <div class="card">
       <h2>🏋️ Treino de hoje</h2>
       <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
       <label>O que foi hoje?</label>
@@ -210,6 +232,11 @@
     <div class="card">
       <h2>💧 Água — últimos 7 dias</h2>
       <canvas id="chartAgua" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>😴 Sono — últimos 7 dias</h2>
+      <canvas id="chartSono" height="180"></canvas>
     </div>
 
     <div class="card">
@@ -362,7 +389,8 @@ function todayKey(){
 }
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, kcal:null, jejum:'', notes:'' };
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, kcal:null, jejum:'', notes:'' };
+  if(!DATA.logs[dateKey].sono) DATA.logs[dateKey].sono = {dormiu:'',acordou:'',qualidade:''};
   return DATA.logs[dateKey];
 }
 
@@ -413,6 +441,29 @@ function setWeight(v){
   const log = getLog();
   log.weight = v ? parseFloat(v) : null;
   saveData(); renderPeso();
+}
+
+/* ====================== HOJE: SONO ====================== */
+function sonoHoras(dormiu, acordou){
+  if(!dormiu || !acordou) return null;
+  const [dh,dm] = dormiu.split(':').map(Number);
+  const [ah,am] = acordou.split(':').map(Number);
+  let mins = (ah*60+am) - (dh*60+dm);
+  if(mins <= 0) mins += 24*60;
+  return mins/60;
+}
+function renderSono(){
+  const log = getLog();
+  document.getElementById('sonoDormiu').value = log.sono.dormiu || '';
+  document.getElementById('sonoAcordou').value = log.sono.acordou || '';
+  document.getElementById('sonoQualidade').value = log.sono.qualidade || '';
+  const horas = sonoHoras(log.sono.dormiu, log.sono.acordou);
+  document.getElementById('sonoHoras').textContent = horas!=null ? `Total: ${horas.toFixed(1)}h de sono` : '';
+}
+function setSono(field, val){
+  const log = getLog();
+  log.sono[field] = val;
+  saveData(); renderSono();
 }
 
 /* ====================== CONFIG: PESO INICIAL / META ====================== */
@@ -662,7 +713,7 @@ function renderBadges(){
   document.getElementById('badges').innerHTML = html;
 }
 
-let chartPeso, chartAgua, chartCargas;
+let chartPeso, chartAgua, chartCargas, chartSono;
 
 function renderChartPeso(){
   const dates = allDatesSorted().filter(d=>DATA.logs[d].weight!=null);
@@ -696,6 +747,31 @@ function renderChartAgua(){
       {label:'Água (L)', data:values, backgroundColor:'#38bdf8'},
     ]},
     options:{ scales:{ y:{ suggestedMax: (PLAN.metas.agua/1000)+0.5, ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} }, x:{ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'}} }, plugins:{legend:{labels:{color:'#eef1f5'}}} }
+  });
+}
+
+function renderChartSono(){
+  const dates = allDatesSorted().slice(-7);
+  const labels = dates.map(d=>d.slice(5));
+  const values = dates.map(d=>{
+    const s = DATA.logs[d].sono;
+    const h = s ? sonoHoras(s.dormiu, s.acordou) : null;
+    return h!=null ? Math.round(h*10)/10 : 0;
+  });
+  const colors = dates.map(d=>{
+    const q = DATA.logs[d].sono && DATA.logs[d].sono.qualidade;
+    if(q==='boa') return '#4ade80';
+    if(q==='regular') return '#fbbf24';
+    if(q==='ruim') return '#f87171';
+    return '#8b5cf6';
+  });
+  if(chartSono) chartSono.destroy();
+  chartSono = new Chart(document.getElementById('chartSono'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Horas de sono', data:values, backgroundColor:colors},
+    ]},
+    options:{ scales:{ y:{ suggestedMax:9, ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} }, x:{ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'}} }, plugins:{legend:{labels:{color:'#eef1f5'}}} }
   });
 }
 
@@ -756,6 +832,7 @@ function renderPainel(){
   renderBadges();
   renderChartPeso();
   renderChartAgua();
+  renderChartSono();
   renderChartCargas();
   renderCorridaHist();
   renderFreqGrid();
@@ -794,6 +871,7 @@ function initToday(){
   if(sugEl) sugEl.textContent = `Sugestão de hoje (${grade.dia}): ${grade.desc}`;
   renderAgua();
   renderPeso();
+  renderSono();
   renderWorkoutArea();
   renderJejum();
   renderMeals();

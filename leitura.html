@@ -59,6 +59,8 @@
   .livro-item{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--card2); font-size:13px;}
   .livro-item.done{border-color:var(--accent); color:var(--accent);}
   .livro-item.current{border-color:var(--accent2); color:var(--accent2);}
+  .reco{background:rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.3); border-radius:10px; padding:10px; font-size:13px; margin-bottom:8px;}
+  textarea{width:100%; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px; font-size:13px; min-height:60px; font-family:inherit;}
 </style>
 </head>
 <body>
@@ -88,6 +90,9 @@
           <input type="number" id="bibliaMin" min="0" oninput="setMin('biblia', this.value)">
         </div>
       </div>
+      <div class="reco" id="bibliaNotaOntem" style="display:none;"></div>
+      <label>Resumo/anotação de hoje (opcional)</label>
+      <textarea id="bibliaNota" placeholder="O que você entendeu/achou marcante hoje?" oninput="setNota('biblia', this.value)"></textarea>
     </div>
 
     <div class="card">
@@ -105,6 +110,9 @@
           <input type="number" id="estoicoMin" min="0" oninput="setMin('estoico', this.value)">
         </div>
       </div>
+      <div class="reco" id="estoicoNotaOntem" style="display:none;"></div>
+      <label>Resumo/anotação de hoje (opcional)</label>
+      <textarea id="estoicoNota" placeholder="O que você entendeu/achou marcante hoje?" oninput="setNota('estoico', this.value)"></textarea>
     </div>
 
     <div class="card">
@@ -116,6 +124,9 @@
         <input type="number" id="livro3Min" placeholder="Minutos" min="0" oninput="setLivro3('min', this.value)">
       </div>
       <p class="muted" id="livro3SemTitulo" style="display:none;">Defina o título do livro na aba Planos.</p>
+      <div class="reco" id="livro3NotaOntem" style="display:none;"></div>
+      <label>Resumo/anotação de hoje (opcional)</label>
+      <textarea id="livro3Nota" placeholder="O que você entendeu/achou marcante hoje?" oninput="setNota('livro3', this.value)"></textarea>
     </div>
 
   </section>
@@ -236,9 +247,9 @@ function todayKey(){
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
   if(!DATA.logs[dateKey]) DATA.logs[dateKey] = {
-    biblia:{ caps:0, min:0 },
-    estoico:{ caps:0, min:0 },
-    livro3:{ paginas:0, min:0 }
+    biblia:{ caps:0, min:0, nota:'' },
+    estoico:{ caps:0, min:0, nota:'' },
+    livro3:{ paginas:0, min:0, nota:'' }
   };
   return DATA.logs[dateKey];
 }
@@ -254,8 +265,25 @@ function switchTab(name){
 }
 
 /* ====================== HOJE ====================== */
+function renderNotaOntem(tipo, elId){
+  const ontem = DATA.logs[yesterdayKey()];
+  const el = document.getElementById(elId);
+  if(ontem && ontem[tipo] && ontem[tipo].nota){
+    el.style.display = 'block';
+    el.textContent = '📝 Ontem você escreveu: ' + ontem[tipo].nota;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 function renderHoje(){
   const log = getLog();
+  renderNotaOntem('biblia','bibliaNotaOntem');
+  renderNotaOntem('estoico','estoicoNotaOntem');
+  renderNotaOntem('livro3','livro3NotaOntem');
+  document.getElementById('bibliaNota').value = log.biblia.nota || '';
+  document.getElementById('estoicoNota').value = log.estoico.nota || '';
+  document.getElementById('livro3Nota').value = log.livro3.nota || '';
 
   // Bíblia — posição no início do dia (antes do que já leu hoje)
   const startIdx = Math.max(0, DATA.progresso.bibliaIndex - log.biblia.caps);
@@ -311,6 +339,18 @@ function setMin(tipo, val){
   const log = getLog();
   log[tipo].min = val ? parseInt(val) : 0;
   saveData();
+}
+
+function setNota(tipo, val){
+  const log = getLog();
+  log[tipo].nota = val;
+  saveData();
+}
+
+function yesterdayKey(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
 function setCapsLidos(tipo, val){
