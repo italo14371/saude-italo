@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leitura do Ítalo</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --card:#1a1d24; --card2:#22262f; --text:#eef1f5; --muted:#9aa3b2;
+    --accent:#4ade80; --accent2:#38bdf8; --warn:#fbbf24; --danger:#f87171; --border:#2b2f3a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); padding-bottom:70px;}
+  header{padding:18px 16px 10px; position:sticky; top:0; background:var(--bg); z-index:10; border-bottom:1px solid var(--border);}
+  header h1{margin:0; font-size:20px;}
+  header .date{color:var(--muted); font-size:13px; margin-top:2px;}
+  main{padding:14px;}
+  .tab{display:none;}
+  .tab.active{display:block; animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px;}
+  .card h2{margin:0 0 10px; font-size:15px; color:var(--accent2); display:flex; align-items:center; gap:6px;}
+  .card h3{margin:14px 0 8px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+
+  .progress{height:14px; background:var(--card2); border-radius:8px; overflow:hidden; border:1px solid var(--border);}
+  .progress > div{height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .3s;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px;}
+
+  .btn-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  button{font:inherit; cursor:pointer;}
+  .chip{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:20px; padding:8px 14px; font-size:14px;}
+  .chip:active{transform:scale(.96);}
+  .chip.primary{background:rgba(74,222,128,.15); border-color:var(--accent); color:var(--accent);}
+  .chip.danger{background:rgba(248,113,113,.12); border-color:var(--danger); color:var(--danger);}
+
+  select, input[type=text], input[type=number]{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; width:100%;
+  }
+  label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
+  .row{display:flex; gap:8px;}
+  .row > *{flex:1;}
+
+  .leitura-hoje{font-size:18px; font-weight:700; margin-bottom:4px;}
+
+  nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  nav.bottom button{flex:1; background:none; border:none; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0; font-size:11px;}
+  nav.bottom button.active{color:var(--accent);}
+  nav.bottom .icon{font-size:20px;}
+
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat{background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center;}
+  .stat .v{font-size:20px; font-weight:700; color:var(--accent);}
+  .stat .l{font-size:11px; color:var(--muted); margin-top:2px;}
+  canvas{max-width:100%;}
+  .muted{color:var(--muted); font-size:12px;}
+  .livro-item{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--card2); font-size:13px;}
+  .livro-item.done{border-color:var(--accent); color:var(--accent);}
+  .livro-item.current{border-color:var(--accent2); color:var(--accent2);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📖 Leitura do Ítalo</h1>
+  <div class="date" id="todayLabel"></div>
+</header>
+
+<main>
+
+  <!-- TAB: HOJE -->
+  <section class="tab active" id="tab-hoje">
+
+    <div class="card">
+      <h2>✝️ Leitura bíblica</h2>
+      <div class="leitura-hoje" id="bibliaHojeTexto"></div>
+      <div class="muted" id="bibliaProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="row">
+        <input type="number" id="bibliaMin" placeholder="Minutos" min="0" oninput="setMin('biblia', this.value)">
+      </div>
+      <div class="btn-row">
+        <button class="chip primary" id="bibliaBtn" onclick="marcarLeitura('biblia')">✅ Marquei como lido</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏛️ Lições estoicas</h2>
+      <div class="leitura-hoje" id="estoicoHojeTexto"></div>
+      <div class="muted" id="estoicoProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="row">
+        <input type="number" id="estoicoMin" placeholder="Minutos" min="0" oninput="setMin('estoico', this.value)">
+      </div>
+      <div class="btn-row">
+        <button class="chip primary" id="estoicoBtn" onclick="marcarLeitura('estoico')">✅ Marquei como lido</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💼 Livro 3 (trabalho/vendas)</h2>
+      <div class="leitura-hoje" id="livro3Titulo"></div>
+      <div class="muted" id="livro3ProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="row">
+        <input type="number" id="livro3Paginas" placeholder="Páginas lidas hoje" min="0" oninput="setLivro3('paginas', this.value)">
+        <input type="number" id="livro3Min" placeholder="Minutos" min="0" oninput="setLivro3('min', this.value)">
+      </div>
+      <p class="muted" id="livro3SemTitulo" style="display:none;">Defina o título do livro na aba Planos.</p>
+    </div>
+
+  </section>
+
+  <!-- TAB: PROGRESSO -->
+  <section class="tab" id="tab-progresso">
+
+    <div class="card">
+      <h2>📊 Resumo</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="v" id="statStreak">0</div><div class="l">dias seguidos lendo algo</div></div>
+        <div class="stat"><div class="v" id="statBiblia">0%</div><div class="l">ciclo bíblico concluído</div></div>
+        <div class="stat"><div class="v" id="statEstoico">0/366</div><div class="l">dias de lições estoicas</div></div>
+        <div class="stat"><div class="v" id="statLivro3">0</div><div class="l">páginas lidas (Livro 3)</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⏱️ Minutos de leitura — últimos 7 dias</h2>
+      <canvas id="chartMin" height="180"></canvas>
+    </div>
+
+  </section>
+
+  <!-- TAB: PLANOS -->
+  <section class="tab" id="tab-planos">
+
+    <div class="card">
+      <h2>✝️ Ordem da leitura bíblica (ciclo 1)</h2>
+      <div id="bibliaOrdemLista"></div>
+    </div>
+
+    <div class="card">
+      <h2>🏛️ Lições estoicas</h2>
+      <p class="muted">Livro de 366 lições diárias curtas — uma por dia, em ordem sequencial. Sem decisão no dia a dia: só marcar "lido" na aba Hoje.</p>
+    </div>
+
+    <div class="card">
+      <h2>💼 Livro 3 — configurar</h2>
+      <label>Título do livro</label>
+      <input type="text" id="livro3TituloInput" placeholder="Ex: Spin Selling" oninput="setLivro3Titulo(this.value)">
+      <p class="muted" style="margin-top:8px;">Esse título fica só no seu celular (localStorage), não vai pro código do app.</p>
+    </div>
+
+  </section>
+
+</main>
+
+<nav class="bottom">
+  <button class="active" data-tab="hoje" onclick="switchTab('hoje')"><span class="icon">📖</span>Hoje</button>
+  <button data-tab="progresso" onclick="switchTab('progresso')"><span class="icon">📊</span>Progresso</button>
+  <button data-tab="planos" onclick="switchTab('planos')"><span class="icon">🗂️</span>Planos</button>
+</nav>
+
+<script>
+/* ====================== PLANO (referência fixa) ====================== */
+const BIBLIA_LIVROS = [
+  { nome:'João', caps:21 },
+  { nome:'Gênesis', caps:50 },
+  { nome:'Marcos', caps:16 },
+  { nome:'Provérbios', caps:31 },
+  { nome:'Atos', caps:28 },
+  { nome:'Êxodo', caps:40 },
+  { nome:'Salmos', caps:150 },
+  { nome:'Lucas', caps:24 },
+  { nome:'Romanos', caps:16 },
+  { nome:'Tiago', caps:5 }
+];
+function buildBibliaSeq(){
+  const seq=[];
+  BIBLIA_LIVROS.forEach(l=>{ for(let c=1;c<=l.caps;c++) seq.push({ livro:l.nome, cap:c }); });
+  return seq;
+}
+const BIBLIA_SEQ = buildBibliaSeq();
+const ESTOICO_TOTAL_DIAS = 366;
+
+/* ====================== DADOS (localStorage) ====================== */
+const STORE_KEY = 'leitura_italo_v1';
+let DATA = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {
+    progresso: { bibliaIndex:0, estoicoDia:1 },
+    settings: { livro3Titulo:'' },
+    logs: {}
+  };
+}
+function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
+
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function getLog(dateKey){
+  dateKey = dateKey || todayKey();
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = {
+    biblia:{ lido:false, capLido:null, min:0 },
+    estoico:{ lido:false, diaLido:null, min:0 },
+    livro3:{ paginas:0, min:0 }
+  };
+  return DATA.logs[dateKey];
+}
+
+/* ====================== NAV ====================== */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector('nav.bottom button[data-tab="'+name+'"]').classList.add('active');
+  if(name==='progresso') renderProgresso();
+  if(name==='planos') renderPlanos();
+}
+
+/* ====================== HOJE ====================== */
+function renderHoje(){
+  const log = getLog();
+
+  // Bíblia
+  const idx = Math.min(DATA.progresso.bibliaIndex, BIBLIA_SEQ.length-1);
+  const atual = BIBLIA_SEQ[idx];
+  if(DATA.progresso.bibliaIndex >= BIBLIA_SEQ.length){
+    document.getElementById('bibliaHojeTexto').textContent = 'Ciclo 1 concluído! 🎉';
+  } else {
+    document.getElementById('bibliaHojeTexto').textContent = `Hoje: ${atual.livro} ${atual.cap}`;
+  }
+  document.getElementById('bibliaProgressoTexto').textContent = `${DATA.progresso.bibliaIndex} de ${BIBLIA_SEQ.length} capítulos (${Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)}%)`;
+  document.getElementById('bibliaMin').value = log.biblia.min || '';
+  const bibliaBtn = document.getElementById('bibliaBtn');
+  bibliaBtn.textContent = log.biblia.lido ? '↩️ Desfazer' : '✅ Marquei como lido';
+  bibliaBtn.className = 'chip ' + (log.biblia.lido ? 'primary' : '');
+
+  // Estoico
+  document.getElementById('estoicoHojeTexto').textContent = DATA.progresso.estoicoDia > ESTOICO_TOTAL_DIAS
+    ? 'Livro concluído! 🎉'
+    : `Hoje: Dia ${DATA.progresso.estoicoDia} de ${ESTOICO_TOTAL_DIAS}`;
+  document.getElementById('estoicoProgressoTexto').textContent = `${DATA.progresso.estoicoDia - 1} de ${ESTOICO_TOTAL_DIAS} dias concluídos`;
+  document.getElementById('estoicoMin').value = log.estoico.min || '';
+  const estoicoBtn = document.getElementById('estoicoBtn');
+  estoicoBtn.textContent = log.estoico.lido ? '↩️ Desfazer' : '✅ Marquei como lido';
+  estoicoBtn.className = 'chip ' + (log.estoico.lido ? 'primary' : '');
+
+  // Livro 3
+  const titulo = DATA.settings.livro3Titulo;
+  document.getElementById('livro3Titulo').textContent = titulo || 'Nenhum livro definido';
+  document.getElementById('livro3SemTitulo').style.display = titulo ? 'none' : 'block';
+  const totalPaginas = Object.values(DATA.logs).reduce((s,l)=> s + (l.livro3? l.livro3.paginas||0 : 0), 0);
+  document.getElementById('livro3ProgressoTexto').textContent = titulo ? `Total lido até agora: ${totalPaginas} páginas` : '';
+  document.getElementById('livro3Paginas').value = log.livro3.paginas || '';
+  document.getElementById('livro3Min').value = log.livro3.min || '';
+}
+
+function setMin(tipo, val){
+  const log = getLog();
+  log[tipo].min = val ? parseInt(val) : 0;
+  saveData();
+}
+
+function marcarLeitura(tipo){
+  const log = getLog();
+  if(tipo==='biblia'){
+    if(!log.biblia.lido){
+      const idx = Math.min(DATA.progresso.bibliaIndex, BIBLIA_SEQ.length-1);
+      log.biblia.capLido = BIBLIA_SEQ[idx];
+      log.biblia.lido = true;
+      if(DATA.progresso.bibliaIndex < BIBLIA_SEQ.length) DATA.progresso.bibliaIndex++;
+    } else {
+      log.biblia.lido = false;
+      log.biblia.capLido = null;
+      if(DATA.progresso.bibliaIndex > 0) DATA.progresso.bibliaIndex--;
+    }
+  } else if(tipo==='estoico'){
+    if(!log.estoico.lido){
+      log.estoico.diaLido = DATA.progresso.estoicoDia;
+      log.estoico.lido = true;
+      if(DATA.progresso.estoicoDia <= ESTOICO_TOTAL_DIAS) DATA.progresso.estoicoDia++;
+    } else {
+      log.estoico.lido = false;
+      log.estoico.diaLido = null;
+      if(DATA.progresso.estoicoDia > 1) DATA.progresso.estoicoDia--;
+    }
+  }
+  saveData(); renderHoje();
+}
+
+function setLivro3(field, val){
+  const log = getLog();
+  log.livro3[field] = val ? parseInt(val) : 0;
+  saveData(); renderHoje();
+}
+
+function setLivro3Titulo(val){
+  DATA.settings.livro3Titulo = val;
+  saveData(); renderHoje();
+}
+
+/* ====================== PROGRESSO ====================== */
+let chartMin = null;
+function renderProgresso(){
+  document.getElementById('statBiblia').textContent = Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)+'%';
+  document.getElementById('statEstoico').textContent = `${DATA.progresso.estoicoDia-1}/${ESTOICO_TOTAL_DIAS}`;
+  const totalPaginas = Object.values(DATA.logs).reduce((s,l)=> s + (l.livro3? l.livro3.paginas||0 : 0), 0);
+  document.getElementById('statLivro3').textContent = totalPaginas;
+
+  // streak
+  let streak=0;
+  for(let i=0;i<365;i++){
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const log = DATA.logs[key];
+    const leu = log && (log.biblia.lido || log.estoico.lido || (log.livro3 && (log.livro3.paginas>0 || log.livro3.min>0)));
+    if(leu) streak++;
+    else if(i>0) break;
+    else if(i===0 && !leu) continue;
+  }
+  document.getElementById('statStreak').textContent = streak;
+
+  // chart últimos 7 dias
+  const labels=[], data=[];
+  for(let i=6;i>=0;i--){
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    labels.push(d.toLocaleDateString('pt-BR',{weekday:'short'}));
+    const log = DATA.logs[key];
+    const min = log ? (log.biblia.min||0) + (log.estoico.min||0) + (log.livro3?log.livro3.min||0:0) : 0;
+    data.push(min);
+  }
+  const ctx = document.getElementById('chartMin');
+  if(chartMin) chartMin.destroy();
+  chartMin = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Minutos', data, backgroundColor:'#4ade80' }] },
+    options:{ scales:{ y:{ beginAtZero:true, ticks:{color:'#9aa3b2'} }, x:{ ticks:{color:'#9aa3b2'} } }, plugins:{ legend:{display:false} } }
+  });
+}
+
+/* ====================== PLANOS ====================== */
+function renderPlanos(){
+  let h='';
+  const idx = DATA.progresso.bibliaIndex;
+  BIBLIA_LIVROS.forEach(livro=>{
+    h += `<div class="livro-item"><strong>${livro.nome}</strong> — ${livro.caps} capítulos</div>`;
+  });
+  document.getElementById('bibliaOrdemLista').innerHTML = h
+    + `<p class="muted" style="margin-top:8px;">Progresso atual: capítulo ${idx} de ${BIBLIA_SEQ.length} do ciclo.</p>`;
+  document.getElementById('livro3TituloInput').value = DATA.settings.livro3Titulo || '';
+}
+
+/* ====================== INIT ====================== */
+document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+renderHoje();
+</script>
+</body>
+</html>
