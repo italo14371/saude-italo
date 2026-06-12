@@ -37,8 +37,9 @@
   .chip.danger{background:rgba(248,113,113,.12); border-color:var(--danger); color:var(--danger);}
   .chip.small{padding:6px 10px; font-size:12px;}
 
-  select, input[type=text], input[type=number]{
+  select, input[type=text], input[type=number], input[type=time]{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; width:100%;
+    color-scheme: dark;
   }
   label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
   .row{display:flex; gap:8px;}
@@ -71,6 +72,12 @@
   .food-card{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--card2);}
   .food-card .fc-row{display:flex; justify-content:space-between; align-items:center;}
   .food-card .fc-macros{color:var(--muted); font-size:12px; margin-top:2px;}
+
+  .slot{border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:6px; background:var(--card2);}
+  .slot-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .slot-row .fi-macros{margin-top:2px;}
+  .slot-row button{flex:none; background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; width:30px; height:30px; font-size:14px;}
+  .slot-edit{margin-top:8px; padding-top:8px; border-top:1px solid var(--border);}
   .exercise.selected{border-color:var(--accent); background:rgba(74,222,128,.08);}
 
   nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
@@ -110,6 +117,7 @@
         <button class="chip primary" onclick="addWater(200)">+200ml</button>
         <button class="chip primary" onclick="addWater(300)">+300ml</button>
         <button class="chip primary" onclick="addWater(500)">+500ml</button>
+        <button class="chip primary" onclick="addWater(800)">+800ml (garrafa)</button>
         <button class="chip primary" onclick="addWater(1000)">+1L</button>
         <button class="chip danger" onclick="resetWater()">Zerar</button>
       </div>
@@ -332,9 +340,10 @@
 const PLAN = {
   metas: { agua: 3500, kcal: 1950, prot: 170 },
   jejum: [
-    { id:'normal', nome:'Jejum até 8h-9h', desc:'Jejum noturno normal — café da manhã leve a partir das 8h-9h' },
-    { id:'estendido', nome:'Jejum até o almoço', desc:'Jejum estendido — pula o café da manhã, primeira refeição é o almoço' },
-    { id:'nenhum', nome:'Sem jejum hoje', desc:'Café da manhã normal' }
+    { id:'padrao12', nome:'Jejum padrão (12h)', desc:'Jejum noturno normal, ~12h (ex: 20h às 8h)' },
+    { id:'estendido20', nome:'Jejum estendido (20h)', desc:'Jejum de 20h, terminando às 8h da manhã' },
+    { id:'ateAlmoco', nome:'Jejum até o almoço', desc:'Pula o café da manhã — primeira refeição é o almoço' },
+    { id:'nenhum', nome:'Sem jejum hoje', desc:'Café da manhã normal, sem restrição' }
   ],
   grade: [
     { dia:'Domingo', tipo:'descanso', desc:'Descanso (opcional: Treino Casa - Plano B)' },
@@ -380,12 +389,6 @@ const PLAN = {
       { nome:'1 ovo cozido', kcal:75, prot:6, carb:1, gord:5 },
       { nome:'Café + whey', kcal:110, prot:24, carb:2, gord:1 }
     ],
-    'Almoço': [
-      { nome:'Frango grelhado 150g + batata doce 200g + salada', kcal:620, prot:52, carb:58, gord:16 },
-      { nome:'Peixe grelhado 180g + arroz 150g + salada', kcal:610, prot:50, carb:56, gord:17 },
-      { nome:'Frango grelhado 150g + batata inglesa 200g + salada', kcal:600, prot:50, carb:55, gord:15 },
-      { nome:'Frango grelhado 150g + 2 ovos + salada (sem carbo)', kcal:480, prot:55, carb:8, gord:22 }
-    ],
     'Café da tarde': [
       { nome:'Banana + aveia + pasta de amendoim', kcal:310, prot:9, carb:42, gord:11 },
       { nome:'Iogurte natural + morango congelado + 1/2 dose whey', kcal:230, prot:22, carb:18, gord:6 },
@@ -404,6 +407,27 @@ const PLAN = {
       { nome:'Ovo cozido + queijo coalho', kcal:145, prot:12, carb:1, gord:10 }
     ]
   },
+  // Almoço: itens separados por componente (proteína/carbo/salada), cada um com gramatura padrão editável
+  cardapioSlots: {
+    'Almoço': [
+      { id:'proteina', nome:'Proteína', options:[
+        { nome:'Frango grelhado', food:'Frango (peito) grelhado', gramas:150 },
+        { nome:'Peixe grelhado', food:'Peixe (tilápia) grelhado', gramas:180 },
+        { nome:'Carne magra grelhada', food:'Carne bovina magra grelhada', gramas:150 },
+        { nome:'2 ovos cozidos', food:'Ovo cozido', gramas:100 }
+      ]},
+      { id:'carbo', nome:'Carboidrato', options:[
+        { nome:'Batata doce', food:'Batata doce cozida', gramas:200 },
+        { nome:'Arroz branco', food:'Arroz branco cozido', gramas:150 },
+        { nome:'Batata inglesa', food:'Batata inglesa cozida', gramas:200 },
+        { nome:'Sem carboidrato', food:null, gramas:0 }
+      ]},
+      { id:'salada', nome:'Salada', options:[
+        { nome:'Salada verde', food:'Salada verde (folhas/tomate)', gramas:150 },
+        { nome:'Sem salada', food:null, gramas:0 }
+      ]}
+    ]
+  },
   // valores por 100g (ou 100ml)
   alimentosBase: [
     { nome:'Arroz branco cozido', kcal:128, prot:2.5, carb:28, gord:0.2 },
@@ -419,6 +443,14 @@ const PLAN = {
     { nome:'Aveia em flocos', kcal:389, prot:17, carb:66, gord:7 },
     { nome:'Banana', kcal:89, prot:1.1, carb:23, gord:0.3 },
     { nome:'Maçã', kcal:52, prot:0.3, carb:14, gord:0.2 },
+    { nome:'Mamão', kcal:40, prot:0.5, carb:10, gord:0.1 },
+    { nome:'Laranja', kcal:46, prot:0.9, carb:11.5, gord:0.1 },
+    { nome:'Morango', kcal:33, prot:0.7, carb:7.7, gord:0.3 },
+    { nome:'Abacaxi', kcal:50, prot:0.5, carb:13, gord:0.1 },
+    { nome:'Manga', kcal:60, prot:0.8, carb:15, gord:0.4 },
+    { nome:'Melancia', kcal:30, prot:0.6, carb:7.5, gord:0.2 },
+    { nome:'Uva', kcal:69, prot:0.7, carb:18, gord:0.2 },
+    { nome:'Abacate', kcal:96, prot:1.2, carb:6, gord:8 },
     { nome:'Iogurte natural integral', kcal:61, prot:3.5, carb:4.7, gord:3.3 },
     { nome:'Iogurte natural desnatado', kcal:41, prot:4, carb:5.9, gord:0.2 },
     { nome:'Queijo coalho/minas', kcal:264, prot:17.4, carb:3, gord:20 },
@@ -428,8 +460,14 @@ const PLAN = {
     { nome:'Azeite de oliva', kcal:884, prot:0, carb:0, gord:100 },
     { nome:'Pasta de amendoim', kcal:588, prot:25, carb:20, gord:50 },
     { nome:'Leite desnatado', kcal:35, prot:3.4, carb:5, gord:0.1 },
+    { nome:'Leite integral', kcal:61, prot:3.1, carb:4.5, gord:3.3 },
     { nome:'Tapioca', kcal:358, prot:0.6, carb:88, gord:0.3 },
-    { nome:'Granola', kcal:410, prot:10, carb:65, gord:12 }
+    { nome:'Granola', kcal:410, prot:10, carb:65, gord:12 },
+    { nome:'Geleia de morango', kcal:250, prot:0.3, carb:62, gord:0.1 },
+    { nome:'Atum em lata (água)', kcal:116, prot:25.5, carb:0, gord:0.8 },
+    { nome:'Queijo cottage', kcal:98, prot:11, carb:3.4, gord:4.3 },
+    { nome:'Café (sem açúcar)', kcal:2, prot:0.1, carb:0, gord:0 },
+    { nome:'Mussarela', kcal:280, prot:18, carb:2, gord:22 }
   ]
 };
 
@@ -459,8 +497,9 @@ function todayKeyOf(d){
 }
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, kcal:null, jejum:'', notes:'' };
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, kcal:null, jejum:'', notes:'' };
   if(!DATA.logs[dateKey].sono) DATA.logs[dateKey].sono = {dormiu:'',acordou:'',qualidade:''};
+  if(!DATA.logs[dateKey].cardapioSel) DATA.logs[dateKey].cardapioSel = {};
   return DATA.logs[dateKey];
 }
 
@@ -676,25 +715,113 @@ function setJejum(id){
   saveData(); renderJejum();
 }
 
+const MEAL_ORDER = ['Manhã (jejum ou leve)','Almoço','Café da tarde','Janta','Lanche da noite (se fome forte)'];
+let openSlotEdits = {};
+
 function allFoods(){
   return PLAN.alimentosBase.concat(DATA.foods);
 }
 function renderFoodDatalist(){
   document.getElementById('foodList').innerHTML = allFoods().map(f=>`<option value="${f.nome}">`).join('');
 }
+function slotMacros(opt, gramas){
+  if(!opt.food) return {kcal:0,prot:0,carb:0,gord:0};
+  const food = allFoods().find(f=>f.nome===opt.food);
+  if(!food) return {kcal:0,prot:0,carb:0,gord:0};
+  const fator = gramas/100;
+  return {
+    kcal: Math.round(food.kcal*fator),
+    prot: Math.round(food.prot*fator*10)/10,
+    carb: Math.round(food.carb*fator*10)/10,
+    gord: Math.round(food.gord*fator*10)/10
+  };
+}
+function computeMealSlotsTotal(meal, log){
+  const totals = {kcal:0,prot:0,carb:0,gord:0};
+  if(!PLAN.cardapioSlots[meal] || !log.cardapioSel || !log.cardapioSel[meal]) return totals;
+  PLAN.cardapioSlots[meal].forEach(slot=>{
+    const sel = log.cardapioSel[meal][slot.id];
+    if(!sel) return;
+    const opt = slot.options[sel.optIdx];
+    if(!opt || sel.pesoLivre) return;
+    const m = slotMacros(opt, sel.gramas);
+    totals.kcal+=m.kcal; totals.prot+=m.prot; totals.carb+=m.carb; totals.gord+=m.gord;
+  });
+  return totals;
+}
+function renderMealSlots(meal){
+  const log = getLog();
+  log.cardapioSel = log.cardapioSel || {};
+  log.cardapioSel[meal] = log.cardapioSel[meal] || {};
+  let h='', totalKcal=0, totalProt=0, totalCarb=0, totalGord=0;
+  PLAN.cardapioSlots[meal].forEach(slot=>{
+    let sel = log.cardapioSel[meal][slot.id];
+    if(!sel){ sel = { optIdx:0, gramas: slot.options[0].gramas, pesoLivre:false }; log.cardapioSel[meal][slot.id] = sel; }
+    const opt = slot.options[sel.optIdx];
+    const macros = sel.pesoLivre ? {kcal:0,prot:0,carb:0,gord:0} : slotMacros(opt, sel.gramas);
+    totalKcal+=macros.kcal; totalProt+=macros.prot; totalCarb+=macros.carb; totalGord+=macros.gord;
+    const editId = `slotEdit-${meal}-${slot.id}`.replace(/[^a-zA-Z0-9]/g,'_');
+    const open = !!openSlotEdits[editId];
+    h += `<div class="slot">
+      <div class="slot-row">
+        <div class="slot-info"><strong>${slot.nome}:</strong> ${opt.nome}${opt.food ? ` — ${sel.pesoLivre?'porção livre':sel.gramas+'g'}` : ''}
+          ${opt.food && !sel.pesoLivre ? `<div class="fi-macros">${macros.kcal} kcal · P${macros.prot} C${macros.carb} G${macros.gord}</div>` : ''}
+        </div>
+        <button onclick="toggleSlotEdit('${editId}')">✏️</button>
+      </div>
+      <div class="slot-edit" id="${editId}" style="display:${open?'block':'none'};">
+        <div class="btn-row" style="margin-top:0;">
+          ${slot.options.map((o,i)=>`<button class="chip small ${i===sel.optIdx?'primary':''}" onclick="setSlotOption('${meal}','${slot.id}',${i})">${o.nome}</button>`).join('')}
+        </div>
+        ${opt.food ? `<div class="row" style="margin-top:8px; align-items:flex-end;">
+          <div><label>Gramas</label><input type="number" value="${sel.gramas}" onchange="setSlotGramas('${meal}','${slot.id}', this.value)"></div>
+          <div style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="pesoLivre-${editId}" ${sel.pesoLivre?'checked':''} onchange="setSlotPesoLivre('${meal}','${slot.id}', this.checked)" style="width:auto;"><label style="margin:0;">Não pesei (porção livre)</label></div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  });
+  return {html:h, kcal:totalKcal, prot:totalProt, carb:totalCarb, gord:totalGord};
+}
+function toggleSlotEdit(editId){
+  openSlotEdits[editId] = !openSlotEdits[editId];
+  renderMeals();
+}
+function setSlotOption(meal, slotId, idx){
+  const log = getLog();
+  const slot = PLAN.cardapioSlots[meal].find(s=>s.id===slotId);
+  log.cardapioSel[meal][slotId] = { optIdx: idx, gramas: slot.options[idx].gramas, pesoLivre:false };
+  saveData(); renderMeals();
+}
+function setSlotGramas(meal, slotId, val){
+  const log = getLog();
+  log.cardapioSel[meal][slotId].gramas = Math.max(0, parseFloat(val)||0);
+  saveData(); renderMeals();
+}
+function setSlotPesoLivre(meal, slotId, checked){
+  const log = getLog();
+  log.cardapioSel[meal][slotId].pesoLivre = checked;
+  saveData(); renderMeals();
+}
 function renderMeals(){
   const log = getLog();
   log.meals = log.meals || {};
   let h='';
   let totalKcal=0, totalProt=0, totalCarb=0, totalGord=0;
-  Object.keys(PLAN.cardapio).forEach(meal=>{
+  MEAL_ORDER.forEach(meal=>{
     h += `<div class="meal"><div class="meal-title">${meal}</div>`;
-    PLAN.cardapio[meal].forEach(opt=>{
-      const sel = log.meals[meal]===opt.nome;
-      if(sel){ totalKcal+=opt.kcal; totalProt+=opt.prot; totalCarb+=opt.carb; totalGord+=opt.gord; }
-      h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.nome.replace(/'/g,"\\'")}\`)">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></button>`;
-    });
-    h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
+
+    if(PLAN.cardapioSlots[meal]){
+      const r = renderMealSlots(meal);
+      h += r.html;
+      totalKcal+=r.kcal; totalProt+=r.prot; totalCarb+=r.carb; totalGord+=r.gord;
+    } else {
+      PLAN.cardapio[meal].forEach(opt=>{
+        const sel = log.meals[meal]===opt.nome;
+        if(sel){ totalKcal+=opt.kcal; totalProt+=opt.prot; totalCarb+=opt.carb; totalGord+=opt.gord; }
+        h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.nome.replace(/'/g,"\\'")}\`)">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></button>`;
+      });
+      h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
+    }
 
     const items = log.meals[meal+'_items'] || [];
     if(items.length){
@@ -819,9 +946,20 @@ function renderPlanRef(){
 /* ====================== TAB DIETA (referência) ====================== */
 function renderCardapioRef(){
   let h='';
-  Object.keys(PLAN.cardapio).forEach(meal=>{
+  MEAL_ORDER.forEach(meal=>{
     h += `<h3>${meal}</h3><ul style="font-size:13px; line-height:1.6; padding-left:20px; margin:0 0 8px;">`;
-    PLAN.cardapio[meal].forEach(opt=> h += `<li>${opt.nome} — <span class="muted">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></li>`);
+    if(PLAN.cardapioSlots[meal]){
+      PLAN.cardapioSlots[meal].forEach(slot=>{
+        const opts = slot.options.map(o=>{
+          if(!o.food) return o.nome;
+          const m = slotMacros(o, o.gramas);
+          return `${o.nome} (${o.gramas}g — ${m.kcal} kcal · P${m.prot} C${m.carb} G${m.gord})`;
+        }).join(' / ');
+        h += `<li><strong>${slot.nome}:</strong> ${opts}</li>`;
+      });
+    } else {
+      PLAN.cardapio[meal].forEach(opt=> h += `<li>${opt.nome} — <span class="muted">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></li>`);
+    }
     h += `</ul>`;
   });
   h += `<p class="muted" style="margin-top:8px;">Meta diária: ~${PLAN.metas.kcal} kcal · ~${PLAN.metas.prot}g proteína. Escolha uma opção por refeição — o app soma o total automaticamente na aba Hoje.</p>`;
@@ -990,11 +1128,16 @@ function renderPainel(){
 function dailyKcalTotal(log){
   if(log.kcal!=null) return log.kcal;
   let total=0, has=false;
-  Object.keys(PLAN.cardapio).forEach(meal=>{
-    const sel = log.meals && log.meals[meal];
-    if(sel){
-      const opt = PLAN.cardapio[meal].find(o=>o.nome===sel);
-      if(opt){ total+=opt.kcal; has=true; }
+  MEAL_ORDER.forEach(meal=>{
+    if(PLAN.cardapioSlots[meal]){
+      const r = computeMealSlotsTotal(meal, log);
+      if(r.kcal>0){ total+=r.kcal; has=true; }
+    } else {
+      const sel = log.meals && log.meals[meal];
+      if(sel){
+        const opt = PLAN.cardapio[meal].find(o=>o.nome===sel);
+        if(opt){ total+=opt.kcal; has=true; }
+      }
     }
     const items = log.meals && log.meals[meal+'_items'];
     if(items && items.length){ items.forEach(it=>total+=it.kcal); has=true; }
