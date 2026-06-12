@@ -59,6 +59,7 @@
   .meal-title{font-weight:600; font-size:14px; margin-bottom:6px;}
   .opt{display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px;}
   .opt.selected{border-color:var(--accent); background:rgba(74,222,128,.12); color:var(--accent);}
+  .exercise.selected{border-color:var(--accent); background:rgba(74,222,128,.08);}
 
   nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
   nav.bottom button{flex:1; background:none; border:none; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0; font-size:11px;}
@@ -110,6 +111,7 @@
 
     <div class="card">
       <h2>🏋️ Treino de hoje</h2>
+      <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
       <label>O que foi hoje?</label>
       <select id="workoutType" onchange="setWorkoutType(this.value)">
         <option value="">Selecione...</option>
@@ -124,7 +126,8 @@
     <div class="card">
       <h2>🍽️ Refeições de hoje</h2>
       <div id="mealsArea"></div>
-      <h3>Calorias estimadas no dia (opcional)</h3>
+      <div class="muted" id="mealsTotal" style="margin-top:8px; font-size:13px;"></div>
+      <h3>Calorias estimadas no dia (opcional, se comeu algo fora do cardápio)</h3>
       <input type="number" id="kcalInput" placeholder="Ex: 1950" oninput="setKcal(this.value)">
     </div>
 
@@ -137,6 +140,11 @@
 
   <!-- TAB: TREINO -->
   <section class="tab" id="tab-treino">
+    <div class="card">
+      <h2>📅 Grade da semana</h2>
+      <div id="planGrade"></div>
+      <p class="muted" style="margin-top:8px;">Se faltar academia no dia de Treino A → faça o Treino Casa no lugar. Se faltar corrida → Treino Casa ou descanso.</p>
+    </div>
     <div class="card">
       <h2>🏋️ Treino A — Academia</h2>
       <p class="muted">Foco: inferiores + costas + core, poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
@@ -250,7 +258,16 @@
 <script>
 /* ====================== PLANO (referência fixa) ====================== */
 const PLAN = {
-  metas: { agua: 3500 },
+  metas: { agua: 3500, kcal: 1950, prot: 170 },
+  grade: [
+    { dia:'Domingo', tipo:'descanso', desc:'Descanso (opcional: Treino Casa - Plano B)' },
+    { dia:'Segunda', tipo:'treinoA', desc:'Treino A — Academia' },
+    { dia:'Terça', tipo:'corrida', desc:'Corrida/Esteira' },
+    { dia:'Quarta', tipo:'treinoA', desc:'Treino A — Academia' },
+    { dia:'Quinta', tipo:'corrida', desc:'Corrida/Esteira' },
+    { dia:'Sexta', tipo:'treinoA', desc:'Treino A — Academia' },
+    { dia:'Sábado', tipo:'corrida', desc:'Corrida/Esteira' }
+  ],
   treinoA: [
     { id:'legpress', nome:'Leg Press', series:3, reps:12,
       alternativas:['Hack Squat','Agachamento no Smith','Cadeira Extensora (carga maior)'] },
@@ -280,23 +297,34 @@ const PLAN = {
     { nome:'Alongamento final', desc:'Postura da criança, alongamento de isquiotibiais, rotação de pescoço, alongamento de trapézio' }
   ],
   cardapio: {
+    'Manhã (jejum ou leve)': [
+      { nome:'Jejum (só água/café/chá sem açúcar)', kcal:0, prot:0, carb:0, gord:0 },
+      { nome:'Iogurte natural integral', kcal:100, prot:6, carb:8, gord:5 },
+      { nome:'1 ovo cozido', kcal:75, prot:6, carb:1, gord:5 },
+      { nome:'Café + whey', kcal:110, prot:24, carb:2, gord:1 }
+    ],
     'Almoço': [
-      'Frango grelhado + batata doce + salada',
-      'Peixe grelhado + batata doce + legumes no vapor',
-      'Frango grelhado + porção pequena de arroz/batata inglesa + salada'
+      { nome:'Frango grelhado 150g + batata doce 200g + salada', kcal:620, prot:52, carb:58, gord:16 },
+      { nome:'Peixe grelhado 180g + arroz 150g + salada', kcal:610, prot:50, carb:56, gord:17 },
+      { nome:'Frango grelhado 150g + batata inglesa 200g + salada', kcal:600, prot:50, carb:55, gord:15 },
+      { nome:'Frango grelhado 150g + 2 ovos + salada (sem carbo)', kcal:480, prot:55, carb:8, gord:22 }
     ],
     'Café da tarde': [
-      'Banana + aveia + pasta de amendoim',
-      'Iogurte natural + morango congelado',
-      'Pão (francês/forma) + queijo coalho ou creme de ricota + ovo cozido'
+      { nome:'Banana + aveia + pasta de amendoim', kcal:310, prot:9, carb:42, gord:11 },
+      { nome:'Iogurte natural + morango congelado + 1/2 dose whey', kcal:230, prot:22, carb:18, gord:6 },
+      { nome:'Pão + queijo coalho/ricota + ovo cozido', kcal:330, prot:19, carb:35, gord:12 },
+      { nome:'Iogurte natural + aveia + pasta de amendoim', kcal:250, prot:12, carb:22, gord:12 }
     ],
     'Janta': [
-      'Omelete com legumes',
-      'Frango desfiado + salada',
-      'Iogurte natural + ovo cozido (dias mais corridos)'
+      { nome:'Omelete 2-3 ovos + queijo + legumes', kcal:340, prot:25, carb:5, gord:24 },
+      { nome:'Frango desfiado + salada + batata doce 100g', kcal:280, prot:28, carb:22, gord:6 },
+      { nome:'Iogurte natural + 2 ovos cozidos', kcal:250, prot:22, carb:8, gord:14 },
+      { nome:'Pão + queijo coalho + ovo cozido', kcal:220, prot:14, carb:16, gord:11 }
     ],
     'Lanche da noite (se fome forte)': [
-      'Iogurte natural + whey'
+      { nome:'Iogurte natural + whey', kcal:250, prot:28, carb:14, gord:6 },
+      { nome:'Whey + água', kcal:120, prot:24, carb:3, gord:1 },
+      { nome:'Ovo cozido + queijo coalho', kcal:145, prot:12, carb:1, gord:10 }
     ]
   }
 };
@@ -506,17 +534,20 @@ function renderMeals(){
   const log = getLog();
   log.meals = log.meals || {};
   let h='';
+  let totalKcal=0, totalProt=0, totalCarb=0, totalGord=0;
   Object.keys(PLAN.cardapio).forEach(meal=>{
     h += `<div class="meal"><div class="meal-title">${meal}</div>`;
     PLAN.cardapio[meal].forEach(opt=>{
-      const sel = log.meals[meal]===opt;
-      h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.replace(/'/g,"\\'")}\`)">${opt}</button>`;
+      const sel = log.meals[meal]===opt.nome;
+      if(sel){ totalKcal+=opt.kcal; totalProt+=opt.prot; totalCarb+=opt.carb; totalGord+=opt.gord; }
+      h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.nome.replace(/'/g,"\\'")}\`)">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></button>`;
     });
     h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
     h += `</div>`;
   });
   document.getElementById('mealsArea').innerHTML = h;
   document.getElementById('kcalInput').value = log.kcal ?? '';
+  document.getElementById('mealsTotal').innerHTML = `Total das opções marcadas: <strong>${totalKcal} kcal</strong> · Proteína ${totalProt}g · Carbo ${totalCarb}g · Gordura ${totalGord}g <span class="muted">(meta: ~${PLAN.metas.kcal} kcal / ~${PLAN.metas.prot}g proteína)</span>`;
 }
 function setMeal(meal, opt){
   const log = getLog();
@@ -544,6 +575,10 @@ function renderNotes(){
 
 /* ====================== TAB TREINO (referência) ====================== */
 function renderPlanRef(){
+  const hojeDia = new Date().getDay();
+  document.getElementById('planGrade').innerHTML = PLAN.grade.map((g,i)=>`
+    <div class="exercise ${i===hojeDia?'selected':''}"><div class="ex-title"><span>${g.dia}${i===hojeDia?' (hoje)':''}</span></div><div class="ex-meta">${g.desc}</div></div>`).join('');
+
   document.getElementById('planTreinoA').innerHTML = PLAN.treinoA.map(ex=>`
     <div class="exercise">
       <div class="ex-title"><span>${ex.nome}</span><span class="muted">${ex.series}x${ex.reps}</span></div>
@@ -564,9 +599,10 @@ function renderCardapioRef(){
   let h='';
   Object.keys(PLAN.cardapio).forEach(meal=>{
     h += `<h3>${meal}</h3><ul style="font-size:13px; line-height:1.6; padding-left:20px; margin:0 0 8px;">`;
-    PLAN.cardapio[meal].forEach(opt=> h += `<li>${opt}</li>`);
+    PLAN.cardapio[meal].forEach(opt=> h += `<li>${opt.nome} — <span class="muted">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></li>`);
     h += `</ul>`;
   });
+  h += `<p class="muted" style="margin-top:8px;">Meta diária: ~${PLAN.metas.kcal} kcal · ~${PLAN.metas.prot}g proteína. Escolha uma opção por refeição — o app soma o total automaticamente na aba Hoje.</p>`;
   document.getElementById('cardapioRef').innerHTML = h;
 }
 
@@ -728,6 +764,9 @@ function importData(event){
 /* ====================== INIT ====================== */
 function initToday(){
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+  const grade = PLAN.grade[new Date().getDay()];
+  const sugEl = document.getElementById('treinoSugerido');
+  if(sugEl) sugEl.textContent = `Sugestão de hoje (${grade.dia}): ${grade.desc}`;
   renderAgua();
   renderPeso();
   renderWorkoutArea();
