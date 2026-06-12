@@ -59,6 +59,18 @@
   .meal-title{font-weight:600; font-size:14px; margin-bottom:6px;}
   .opt{display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px;}
   .opt.selected{border-color:var(--accent); background:rgba(74,222,128,.12); color:var(--accent);}
+
+  .food-item{display:flex; justify-content:space-between; align-items:center; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:13px;}
+  .food-item .fi-info{flex:1;}
+  .food-item .fi-macros{color:var(--muted); font-size:11px;}
+  .food-item .fi-del{background:none; border:none; color:var(--danger); font-size:16px; padding:0 0 0 10px; flex:none;}
+  .add-food-row{display:flex; gap:6px; margin-top:8px; align-items:flex-end;}
+  .add-food-row select{flex:2;}
+  .add-food-row input{flex:1;}
+  .add-food-row button{flex:none; background:var(--accent); border:none; color:#0f1115; border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600;}
+  .food-card{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--card2);}
+  .food-card .fc-row{display:flex; justify-content:space-between; align-items:center;}
+  .food-card .fc-macros{color:var(--muted); font-size:12px; margin-top:2px;}
   .exercise.selected{border-color:var(--accent); background:rgba(74,222,128,.08);}
 
   nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
@@ -152,10 +164,29 @@
 
     <div class="card">
       <h2>🍽️ Refeições de hoje</h2>
+      <datalist id="foodList"></datalist>
       <div id="mealsArea"></div>
       <div class="muted" id="mealsTotal" style="margin-top:8px; font-size:13px;"></div>
       <h3>Calorias estimadas no dia (opcional, se comeu algo fora do cardápio)</h3>
       <input type="number" id="kcalInput" placeholder="Ex: 1950" oninput="setKcal(this.value)">
+    </div>
+
+    <div class="card">
+      <h2>📋 Meus Alimentos</h2>
+      <p class="muted" style="margin-top:0;">Cadastre alimentos que você usa bastante (valores por 100g/100ml) para poder adicioná-los nas refeições com a gramatura exata.</p>
+      <div class="row">
+        <div><label>Nome</label><input type="text" id="foodNome" placeholder="Ex: Peito de frango"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div><label>Kcal/100g</label><input type="number" id="foodKcal" placeholder="165"></div>
+        <div><label>Prot/100g</label><input type="number" id="foodProt" placeholder="31"></div>
+        <div><label>Carbo/100g</label><input type="number" id="foodCarb" placeholder="0"></div>
+        <div><label>Gordura/100g</label><input type="number" id="foodGord" placeholder="3.6"></div>
+      </div>
+      <div class="btn-row">
+        <button class="chip primary" onclick="addCustomFood()">+ Salvar alimento</button>
+      </div>
+      <div id="customFoodsList" style="margin-top:10px;"></div>
     </div>
 
     <div class="card">
@@ -221,6 +252,15 @@
     <div class="card">
       <h2>🏅 Streaks e badges</h2>
       <div id="badges"></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Comparador</h2>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="chip" id="compBtnSemana" onclick="setCompModo('semana')">Semana atual vs anterior</button>
+        <button class="chip" id="compBtnMes" onclick="setCompModo('mes')">Mês atual vs anterior</button>
+      </div>
+      <div id="comparador" style="margin-top:10px;"></div>
     </div>
 
     <div class="card">
@@ -363,7 +403,34 @@ const PLAN = {
       { nome:'Whey + água', kcal:120, prot:24, carb:3, gord:1 },
       { nome:'Ovo cozido + queijo coalho', kcal:145, prot:12, carb:1, gord:10 }
     ]
-  }
+  },
+  // valores por 100g (ou 100ml)
+  alimentosBase: [
+    { nome:'Arroz branco cozido', kcal:128, prot:2.5, carb:28, gord:0.2 },
+    { nome:'Arroz integral cozido', kcal:124, prot:2.6, carb:25.8, gord:1 },
+    { nome:'Feijão carioca cozido', kcal:76, prot:4.8, carb:13.6, gord:0.5 },
+    { nome:'Frango (peito) grelhado', kcal:165, prot:31, carb:0, gord:3.6 },
+    { nome:'Carne bovina magra grelhada', kcal:217, prot:26, carb:0, gord:12 },
+    { nome:'Ovo cozido', kcal:155, prot:13, carb:1.1, gord:11 },
+    { nome:'Batata doce cozida', kcal:86, prot:1.6, carb:20, gord:0.1 },
+    { nome:'Batata inglesa cozida', kcal:87, prot:1.9, carb:20, gord:0.1 },
+    { nome:'Pão francês', kcal:300, prot:8, carb:58, gord:3 },
+    { nome:'Pão integral', kcal:250, prot:9, carb:43, gord:4 },
+    { nome:'Aveia em flocos', kcal:389, prot:17, carb:66, gord:7 },
+    { nome:'Banana', kcal:89, prot:1.1, carb:23, gord:0.3 },
+    { nome:'Maçã', kcal:52, prot:0.3, carb:14, gord:0.2 },
+    { nome:'Iogurte natural integral', kcal:61, prot:3.5, carb:4.7, gord:3.3 },
+    { nome:'Iogurte natural desnatado', kcal:41, prot:4, carb:5.9, gord:0.2 },
+    { nome:'Queijo coalho/minas', kcal:264, prot:17.4, carb:3, gord:20 },
+    { nome:'Whey protein (pó)', kcal:380, prot:80, carb:8, gord:5 },
+    { nome:'Peixe (tilápia) grelhado', kcal:128, prot:26, carb:0, gord:2.7 },
+    { nome:'Salada verde (folhas/tomate)', kcal:20, prot:1, carb:3, gord:0.2 },
+    { nome:'Azeite de oliva', kcal:884, prot:0, carb:0, gord:100 },
+    { nome:'Pasta de amendoim', kcal:588, prot:25, carb:20, gord:50 },
+    { nome:'Leite desnatado', kcal:35, prot:3.4, carb:5, gord:0.1 },
+    { nome:'Tapioca', kcal:358, prot:0.6, carb:88, gord:0.3 },
+    { nome:'Granola', kcal:410, prot:10, carb:65, gord:12 }
+  ]
 };
 
 /* ====================== DADOS (localStorage) ====================== */
@@ -376,15 +443,18 @@ function loadData(){
     if(raw){
       const d = JSON.parse(raw);
       if(!d.settings) d.settings = { pesoInicial:null, pesoMeta:null };
+      if(!d.foods) d.foods = [];
       return d;
     }
   }catch(e){}
-  return { logs:{}, settings:{ pesoInicial:null, pesoMeta:null } };
+  return { logs:{}, settings:{ pesoInicial:null, pesoMeta:null }, foods:[] };
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
 
 function todayKey(){
-  const d = new Date();
+  return todayKeyOf(new Date());
+}
+function todayKeyOf(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function getLog(dateKey){
@@ -606,6 +676,12 @@ function setJejum(id){
   saveData(); renderJejum();
 }
 
+function allFoods(){
+  return PLAN.alimentosBase.concat(DATA.foods);
+}
+function renderFoodDatalist(){
+  document.getElementById('foodList').innerHTML = allFoods().map(f=>`<option value="${f.nome}">`).join('');
+}
 function renderMeals(){
   const log = getLog();
   log.meals = log.meals || {};
@@ -619,11 +695,81 @@ function renderMeals(){
       h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.nome.replace(/'/g,"\\'")}\`)">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></button>`;
     });
     h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
+
+    const items = log.meals[meal+'_items'] || [];
+    if(items.length){
+      h += `<div style="margin-top:8px;">`;
+      items.forEach((it,idx)=>{
+        totalKcal+=it.kcal; totalProt+=it.prot; totalCarb+=it.carb; totalGord+=it.gord;
+        h += `<div class="food-item"><div class="fi-info">${it.nome} — ${it.gramas}g<br><span class="fi-macros">${it.kcal} kcal · P${it.prot} C${it.carb} G${it.gord}</span></div><button class="fi-del" onclick="removeFoodItem('${meal}', ${idx})">✕</button></div>`;
+      });
+      h += `</div>`;
+    }
+
+    h += `<div class="add-food-row">
+      <div style="flex:2;"><input type="text" list="foodList" id="foodInput-${meal}" placeholder="Buscar alimento..."></div>
+      <div style="flex:1;"><input type="number" id="gramasInput-${meal}" placeholder="g"></div>
+      <button onclick="addFoodItem('${meal.replace(/'/g,"\\'")}')">+</button>
+    </div>`;
+
     h += `</div>`;
   });
   document.getElementById('mealsArea').innerHTML = h;
   document.getElementById('kcalInput').value = log.kcal ?? '';
-  document.getElementById('mealsTotal').innerHTML = `Total das opções marcadas: <strong>${totalKcal} kcal</strong> · Proteína ${totalProt}g · Carbo ${totalCarb}g · Gordura ${totalGord}g <span class="muted">(meta: ~${PLAN.metas.kcal} kcal / ~${PLAN.metas.prot}g proteína)</span>`;
+  document.getElementById('mealsTotal').innerHTML = `Total marcado: <strong>${Math.round(totalKcal)} kcal</strong> · Proteína ${totalProt.toFixed(1)}g · Carbo ${totalCarb.toFixed(1)}g · Gordura ${totalGord.toFixed(1)}g <span class="muted">(meta: ~${PLAN.metas.kcal} kcal / ~${PLAN.metas.prot}g proteína)</span>`;
+}
+function addFoodItem(meal){
+  const nomeInput = document.getElementById(`foodInput-${meal}`);
+  const gramasInput = document.getElementById(`gramasInput-${meal}`);
+  const nome = nomeInput.value.trim();
+  const gramas = parseFloat(gramasInput.value);
+  if(!nome || !gramas){ return; }
+  const food = allFoods().find(f=>f.nome.toLowerCase()===nome.toLowerCase());
+  if(!food){ alert('Alimento não encontrado. Cadastre em "Meus Alimentos" (aba Dieta) ou escolha um da lista.'); return; }
+  const fator = gramas/100;
+  const log = getLog();
+  log.meals = log.meals || {};
+  log.meals[meal+'_items'] = log.meals[meal+'_items'] || [];
+  log.meals[meal+'_items'].push({
+    nome: food.nome, gramas,
+    kcal: Math.round(food.kcal*fator),
+    prot: Math.round(food.prot*fator*10)/10,
+    carb: Math.round(food.carb*fator*10)/10,
+    gord: Math.round(food.gord*fator*10)/10
+  });
+  saveData();
+  nomeInput.value=''; gramasInput.value='';
+  renderMeals();
+}
+function removeFoodItem(meal, idx){
+  const log = getLog();
+  log.meals[meal+'_items'].splice(idx,1);
+  saveData(); renderMeals();
+}
+
+/* ====================== MEUS ALIMENTOS ====================== */
+function addCustomFood(){
+  const nome = document.getElementById('foodNome').value.trim();
+  const kcal = parseFloat(document.getElementById('foodKcal').value);
+  const prot = parseFloat(document.getElementById('foodProt').value) || 0;
+  const carb = parseFloat(document.getElementById('foodCarb').value) || 0;
+  const gord = parseFloat(document.getElementById('foodGord').value) || 0;
+  if(!nome || isNaN(kcal)){ alert('Preencha pelo menos o nome e o kcal/100g.'); return; }
+  DATA.foods.push({ id: Date.now().toString(), nome, kcal, prot, carb, gord });
+  saveData();
+  ['foodNome','foodKcal','foodProt','foodCarb','foodGord'].forEach(id=>document.getElementById(id).value='');
+  renderCustomFoods(); renderFoodDatalist();
+}
+function deleteCustomFood(id){
+  DATA.foods = DATA.foods.filter(f=>f.id!==id);
+  saveData(); renderCustomFoods(); renderFoodDatalist();
+}
+function renderCustomFoods(){
+  const el = document.getElementById('customFoodsList');
+  if(!DATA.foods.length){ el.innerHTML = '<p class="muted">Nenhum alimento cadastrado ainda.</p>'; return; }
+  el.innerHTML = DATA.foods.map(f=>`
+    <div class="food-card"><div class="fc-row"><strong>${f.nome}</strong><button class="fi-del" onclick="deleteCustomFood('${f.id}')">✕</button></div>
+    <div class="fc-macros">${f.kcal} kcal · P${f.prot} C${f.carb} G${f.gord} (por 100g)</div></div>`).join('');
 }
 function setMeal(meal, opt){
   const log = getLog();
@@ -714,6 +860,7 @@ function renderBadges(){
 }
 
 let chartPeso, chartAgua, chartCargas, chartSono;
+let compModo = 'semana';
 
 function renderChartPeso(){
   const dates = allDatesSorted().filter(d=>DATA.logs[d].weight!=null);
@@ -830,12 +977,88 @@ function renderFreqGrid(){
 function renderPainel(){
   renderSettings();
   renderBadges();
+  renderComparador();
   renderChartPeso();
   renderChartAgua();
   renderChartSono();
   renderChartCargas();
   renderCorridaHist();
   renderFreqGrid();
+}
+
+/* ====================== COMPARADOR SEMANA/MES ====================== */
+function dailyKcalTotal(log){
+  if(log.kcal!=null) return log.kcal;
+  let total=0, has=false;
+  Object.keys(PLAN.cardapio).forEach(meal=>{
+    const sel = log.meals && log.meals[meal];
+    if(sel){
+      const opt = PLAN.cardapio[meal].find(o=>o.nome===sel);
+      if(opt){ total+=opt.kcal; has=true; }
+    }
+    const items = log.meals && log.meals[meal+'_items'];
+    if(items && items.length){ items.forEach(it=>total+=it.kcal); has=true; }
+  });
+  return has ? total : null;
+}
+function computeStats(dates){
+  let waterSum=0, waterCount=0, sonoSum=0, sonoCount=0, kcalSum=0, kcalCount=0, treinos=0;
+  let pesoFirst=null, pesoLast=null;
+  dates.forEach(dk=>{
+    const log = DATA.logs[dk];
+    if(!log) return;
+    if(log.water){ waterSum+=log.water; waterCount++; }
+    if(log.sono){
+      const h = sonoHoras(log.sono.dormiu, log.sono.acordou);
+      if(h!=null){ sonoSum+=h; sonoCount++; }
+    }
+    const kc = dailyKcalTotal(log);
+    if(kc!=null){ kcalSum+=kc; kcalCount++; }
+    if(log.workoutType && log.workoutType!=='descanso') treinos++;
+    if(log.weight!=null){ if(pesoFirst==null) pesoFirst=log.weight; pesoLast=log.weight; }
+  });
+  return {
+    aguaMedia: waterCount? waterSum/waterCount/1000 : null,
+    sonoMedia: sonoCount? sonoSum/sonoCount : null,
+    kcalMedia: kcalCount? kcalSum/kcalCount : null,
+    treinos,
+    pesoVar: (pesoFirst!=null && pesoLast!=null) ? pesoLast-pesoFirst : null
+  };
+}
+function setCompModo(modo){
+  compModo = modo;
+  renderComparador();
+}
+function renderComparador(){
+  document.getElementById('compBtnSemana').classList.toggle('primary', compModo==='semana');
+  document.getElementById('compBtnMes').classList.toggle('primary', compModo==='mes');
+  const hoje = new Date();
+  let atualDates=[], anteriorDates=[], labelAtual, labelAnterior;
+  if(compModo==='semana'){
+    for(let i=6;i>=0;i--){ const d=new Date(hoje); d.setDate(d.getDate()-i); atualDates.push(todayKeyOf(d)); }
+    for(let i=13;i>=7;i--){ const d=new Date(hoje); d.setDate(d.getDate()-i); anteriorDates.push(todayKeyOf(d)); }
+    labelAtual='Últimos 7 dias'; labelAnterior='7 dias anteriores';
+  } else {
+    const y=hoje.getFullYear(), m=hoje.getMonth();
+    for(let d=1; d<=hoje.getDate(); d++){ atualDates.push(todayKeyOf(new Date(y,m,d))); }
+    const py = m===0? y-1 : y, pm = m===0? 11 : m-1;
+    const daysInPrev = new Date(py,pm+1,0).getDate();
+    for(let d=1; d<=daysInPrev; d++){ anteriorDates.push(todayKeyOf(new Date(py,pm,d))); }
+    labelAtual='Mês atual'; labelAnterior='Mês anterior';
+  }
+  const atual = computeStats(atualDates);
+  const anterior = computeStats(anteriorDates);
+  const fmt = (v,dec,suf)=> v!=null ? v.toFixed(dec)+suf : '-';
+  const fmtVar = v => v!=null ? (v>0?'+':'')+v.toFixed(1)+'kg' : '-';
+  let h = `<table style="width:100%; font-size:13px; border-collapse:collapse;">`;
+  h += `<tr style="color:var(--muted);"><td></td><td>${labelAtual}</td><td>${labelAnterior}</td></tr>`;
+  h += `<tr><td>💧 Água média</td><td>${fmt(atual.aguaMedia,2,'L')}</td><td>${fmt(anterior.aguaMedia,2,'L')}</td></tr>`;
+  h += `<tr><td>😴 Sono médio</td><td>${fmt(atual.sonoMedia,1,'h')}</td><td>${fmt(anterior.sonoMedia,1,'h')}</td></tr>`;
+  h += `<tr><td>🍽️ Kcal média</td><td>${atual.kcalMedia!=null?Math.round(atual.kcalMedia):'-'}</td><td>${anterior.kcalMedia!=null?Math.round(anterior.kcalMedia):'-'}</td></tr>`;
+  h += `<tr><td>🏋️ Dias treinados</td><td>${atual.treinos}</td><td>${anterior.treinos}</td></tr>`;
+  h += `<tr><td>⚖️ Variação de peso</td><td>${fmtVar(atual.pesoVar)}</td><td>${fmtVar(anterior.pesoVar)}</td></tr>`;
+  h += `</table>`;
+  document.getElementById('comparador').innerHTML = h;
 }
 
 /* ====================== EXPORT / IMPORT ====================== */
@@ -874,6 +1097,8 @@ function initToday(){
   renderSono();
   renderWorkoutArea();
   renderJejum();
+  renderFoodDatalist();
+  renderCustomFoods();
   renderMeals();
   renderNotes();
   const metaEl = document.getElementById('metaPesoStat');
