@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saúde do Ítalo</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --card:#1a1d24; --card2:#22262f; --text:#eef1f5; --muted:#9aa3b2;
+    --accent:#4ade80; --accent2:#38bdf8; --warn:#fbbf24; --danger:#f87171; --border:#2b2f3a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); padding-bottom:70px;}
+  header{padding:18px 16px 10px; position:sticky; top:0; background:var(--bg); z-index:10; border-bottom:1px solid var(--border);}
+  header h1{margin:0; font-size:20px;}
+  header .date{color:var(--muted); font-size:13px; margin-top:2px;}
+  main{padding:14px;}
+  .tab{display:none;}
+  .tab.active{display:block; animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px;}
+  .card h2{margin:0 0 10px; font-size:15px; color:var(--accent2); display:flex; align-items:center; gap:6px;}
+  .card h3{margin:14px 0 8px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+
+  .progress{height:14px; background:var(--card2); border-radius:8px; overflow:hidden; border:1px solid var(--border);}
+  .progress > div{height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .3s;}
+  .progress-label{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px;}
+
+  .btn-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  button{font:inherit; cursor:pointer;}
+  .chip{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:20px; padding:8px 14px; font-size:14px;}
+  .chip:active{transform:scale(.96);}
+  .chip.primary{background:rgba(74,222,128,.15); border-color:var(--accent); color:var(--accent);}
+  .chip.danger{background:rgba(248,113,113,.12); border-color:var(--danger); color:var(--danger);}
+  .chip.small{padding:6px 10px; font-size:12px;}
+
+  select, input[type=text], input[type=number]{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; width:100%;
+  }
+  label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
+  .row{display:flex; gap:8px;}
+  .row > *{flex:1;}
+
+  .exercise{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; background:var(--card2);}
+  .exercise .ex-title{font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:6px;}
+  .exercise .ex-meta{font-size:12px; color:var(--muted); margin-top:2px;}
+  .exercise .ex-obs{font-size:12px; color:var(--warn); margin-top:4px;}
+  .sets{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
+  .set-row{display:flex; gap:6px; align-items:center;}
+  .set-row .set-idx{width:22px; color:var(--muted); font-size:12px; text-align:center;}
+  .set-row input{width:100%;}
+  .set-row .ok{width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;}
+  .set-row .ok.done{background:rgba(74,222,128,.2); border-color:var(--accent); color:var(--accent);}
+
+  .meal{margin-bottom:14px;}
+  .meal-title{font-weight:600; font-size:14px; margin-bottom:6px;}
+  .opt{display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px;}
+  .opt.selected{border-color:var(--accent); background:rgba(74,222,128,.12); color:var(--accent);}
+
+  nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  nav.bottom button{flex:1; background:none; border:none; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0; font-size:11px;}
+  nav.bottom button.active{color:var(--accent);}
+  nav.bottom .icon{font-size:20px;}
+
+  .badge{display:inline-flex; align-items:center; gap:4px; background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:6px 12px; font-size:12px; margin:3px 4px 0 0;}
+  .badge.on{border-color:var(--accent); color:var(--accent); background:rgba(74,222,128,.12);}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat{background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center;}
+  .stat .v{font-size:20px; font-weight:700; color:var(--accent);}
+  .stat .l{font-size:11px; color:var(--muted); margin-top:2px;}
+  canvas{max-width:100%;}
+  .muted{color:var(--muted); font-size:12px;}
+  .reco{background:rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.3); border-radius:10px; padding:10px; font-size:13px; margin-top:8px;}
+  textarea{width:100%; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px; font-size:13px; min-height:60px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🩺 Saúde do Ítalo</h1>
+  <div class="date" id="todayLabel"></div>
+</header>
+
+<main>
+
+  <!-- TAB: HOJE -->
+  <section class="tab active" id="tab-hoje">
+
+    <div class="card">
+      <h2>💧 Água</h2>
+      <div class="progress"><div id="waterBar"></div></div>
+      <div class="progress-label"><span id="waterLabel"></span><span id="waterPct"></span></div>
+      <div class="btn-row">
+        <button class="chip primary" onclick="addWater(200)">+200ml</button>
+        <button class="chip primary" onclick="addWater(300)">+300ml</button>
+        <button class="chip primary" onclick="addWater(500)">+500ml</button>
+        <button class="chip primary" onclick="addWater(1000)">+1L</button>
+        <button class="chip danger" onclick="resetWater()">Zerar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚖️ Peso de hoje</h2>
+      <input type="number" step="0.1" id="weightInput" placeholder="Ex: 80.0" oninput="setWeight(this.value)">
+      <div class="muted" id="weightDiff" style="margin-top:6px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>🏋️ Treino de hoje</h2>
+      <label>O que foi hoje?</label>
+      <select id="workoutType" onchange="setWorkoutType(this.value)">
+        <option value="">Selecione...</option>
+        <option value="treinoA">Treino A — Academia</option>
+        <option value="corrida">Corrida / Esteira</option>
+        <option value="treinoCasa">Treino Casa (Plano B)</option>
+        <option value="descanso">Descanso</option>
+      </select>
+      <div id="workoutArea" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>🍽️ Refeições de hoje</h2>
+      <div id="mealsArea"></div>
+      <h3>Calorias estimadas no dia (opcional)</h3>
+      <input type="number" id="kcalInput" placeholder="Ex: 1950" oninput="setKcal(this.value)">
+    </div>
+
+    <div class="card">
+      <h2>📝 Observações do dia</h2>
+      <textarea id="notesInput" placeholder="Ex: senti dor no ombro na remada, troquei por..." oninput="setNotes(this.value)"></textarea>
+    </div>
+
+  </section>
+
+  <!-- TAB: TREINO -->
+  <section class="tab" id="tab-treino">
+    <div class="card">
+      <h2>🏋️ Treino A — Academia</h2>
+      <p class="muted">Foco: inferiores + costas + core, poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
+      <div id="planTreinoA"></div>
+    </div>
+    <div class="card">
+      <h2>🏃 Corrida / Esteira — Progressão</h2>
+      <div id="planCorrida"></div>
+    </div>
+    <div class="card">
+      <h2>🏠 Treino Casa (Plano B)</h2>
+      <p class="muted">Calistenia leve, sem equipamento, mesmo foco em core/lombar/pescoço, poupando o ombro.</p>
+      <div id="planCasa"></div>
+    </div>
+  </section>
+
+  <!-- TAB: DIETA -->
+  <section class="tab" id="tab-dieta">
+    <div class="card">
+      <h2>🎯 Metas</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="v">1.900-2.000</div><div class="l">kcal/dia</div></div>
+        <div class="stat"><div class="v">160-180g</div><div class="l">proteína/dia</div></div>
+        <div class="stat"><div class="v">3,5L</div><div class="l">água/dia</div></div>
+        <div class="stat"><div class="v" id="metaPesoStat">-</div><div class="l">meta de peso</div></div>
+      </div>
+      <p class="muted" style="margin-top:8px;">Meta de peso configurável na aba Painel → Dados.</p>
+    </div>
+    <div class="card">
+      <h2>🍳 Cardápio Base</h2>
+      <div id="cardapioRef"></div>
+    </div>
+    <div class="card">
+      <h2>🍫 Estratégias rápidas</h2>
+      <ul style="font-size:13px; line-height:1.6; padding-left:20px; margin:0;">
+        <li>Vontade de doce → tente primeiro uma opção da pasta "Doces Saudáveis" (iogurte + morango congelado)</li>
+        <li>Janta o mais leve possível, idealmente até 19h-19h30 (refluxo)</li>
+        <li>Almoço fora: priorize grelhados + salada, leve batata doce de casa quando possível</li>
+        <li>Fome forte à noite: iogurte natural + whey</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- TAB: PAINEL -->
+  <section class="tab" id="tab-painel">
+
+    <div class="card">
+      <h2>🏅 Streaks e badges</h2>
+      <div id="badges"></div>
+    </div>
+
+    <div class="card">
+      <h2>⚖️ Evolução do peso</h2>
+      <canvas id="chartPeso" height="180"></canvas>
+      <div class="reco" id="pesoReco"></div>
+    </div>
+
+    <div class="card">
+      <h2>💧 Água — últimos 7 dias</h2>
+      <canvas id="chartAgua" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>🏋️ Progressão de cargas</h2>
+      <label>Exercício</label>
+      <select id="exSelect" onchange="renderChartCargas()"></select>
+      <canvas id="chartCargas" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>🏃 Progressão de corrida</h2>
+      <div id="corridaHist" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <h2>📅 Frequência de treino (últimos 14 dias)</h2>
+      <div id="freqGrid" style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;"></div>
+      <div class="muted" style="margin-top:8px;">Meta: 4-6 dias treinados por semana</div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ Configuração de peso</h2>
+      <p class="muted">Esses valores ficam só no seu celular (não vão pro código do app).</p>
+      <div class="row" style="margin-top:8px;">
+        <div><label>Peso inicial (kg)</label><input type="number" step="0.1" id="settingsPesoInicial" oninput="setSettingsField('pesoInicial', this.value)"></div>
+        <div><label>Meta de peso (kg)</label><input type="number" step="0.1" id="settingsPesoMeta" oninput="setSettingsField('pesoMeta', this.value)"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ Dados</h2>
+      <div class="btn-row">
+        <button class="chip" onclick="exportData()">Exportar JSON</button>
+        <button class="chip" onclick="document.getElementById('importFile').click()">Importar JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+      </div>
+      <p class="muted" style="margin-top:8px;">Exporte de tempos em tempos pra fazer backup ou compartilhar com o Claude pra revisar sua evolução.</p>
+    </div>
+
+  </section>
+
+</main>
+
+<nav class="bottom">
+  <button class="active" data-tab="hoje" onclick="switchTab('hoje')"><span class="icon">📋</span>Hoje</button>
+  <button data-tab="treino" onclick="switchTab('treino')"><span class="icon">🏋️</span>Treino</button>
+  <button data-tab="dieta" onclick="switchTab('dieta')"><span class="icon">🍽️</span>Dieta</button>
+  <button data-tab="painel" onclick="switchTab('painel')"><span class="icon">📊</span>Painel</button>
+</nav>
+
+<script>
+/* ====================== PLANO (referência fixa) ====================== */
+const PLAN = {
+  metas: { agua: 3500 },
+  treinoA: [
+    { id:'legpress', nome:'Leg Press', series:3, reps:12,
+      alternativas:['Hack Squat','Agachamento no Smith','Cadeira Extensora (carga maior)'] },
+    { id:'extensora', nome:'Cadeira Extensora', series:3, reps:12,
+      alternativas:['Leg Press','Agachamento no Smith'] },
+    { id:'flexora', nome:'Cadeira Flexora', series:3, reps:12,
+      alternativas:['Stiff (carga leve)','Mesa Flexora Deitada'] },
+    { id:'remada', nome:'Remada Baixa Neutra / Puxada na Polia', series:3, reps:12,
+      alternativas:['Puxada Frontal Pegada Neutra','Remada Unilateral (halter leve)'],
+      obs:'Carga leve — poupar ombro sensível. Pare se incomodar.' },
+    { id:'core', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
+      alternativas:['Abdominal Isométrico','Hip Thrust (carga leve)'] }
+  ],
+  corrida: [
+    { fase:'Fase 1', desc:'Caminhada confortável, 15-20 min (sem correr ainda)' },
+    { fase:'Fase 2', desc:'Intervalado leve: 1 min trote / 2 min caminhada, repetir 15-20 min' },
+    { fase:'Fase 3', desc:'Aumentar proporção de trote (ex: 2 min trote / 1 min caminhada)' },
+    { fase:'Fase 4', desc:'Corrida contínua leve, aumentando tempo gradualmente' }
+  ],
+  treinoCasa: [
+    { nome:'Aquecimento', desc:'Marcha/polichinelo leve + mobilidade de ombros e quadril + gato-camelo (8-10x)' },
+    { nome:'Agachamento livre (ou sentar/levantar de cadeira)', desc:'2-3 séries x 12 reps' },
+    { nome:'Afundo / passada estática', desc:'2-3 séries x 10 reps cada lado' },
+    { nome:'Ponte de glúteo', desc:'2-3 séries x 12 reps' },
+    { nome:'Prancha', desc:'2-3 séries x 20-30s (joelhos no chão se precisar)' },
+    { nome:'Superman leve', desc:'2-3 séries x 10-12 reps' },
+    { nome:'Alongamento final', desc:'Postura da criança, alongamento de isquiotibiais, rotação de pescoço, alongamento de trapézio' }
+  ],
+  cardapio: {
+    'Almoço': [
+      'Frango grelhado + batata doce + salada',
+      'Peixe grelhado + batata doce + legumes no vapor',
+      'Frango grelhado + porção pequena de arroz/batata inglesa + salada'
+    ],
+    'Café da tarde': [
+      'Banana + aveia + pasta de amendoim',
+      'Iogurte natural + morango congelado',
+      'Pão (francês/forma) + queijo coalho ou creme de ricota + ovo cozido'
+    ],
+    'Janta': [
+      'Omelete com legumes',
+      'Frango desfiado + salada',
+      'Iogurte natural + ovo cozido (dias mais corridos)'
+    ],
+    'Lanche da noite (se fome forte)': [
+      'Iogurte natural + whey'
+    ]
+  }
+};
+
+/* ====================== DADOS (localStorage) ====================== */
+const STORE_KEY = 'saude_italo_v1';
+let DATA = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(!d.settings) d.settings = { pesoInicial:null, pesoMeta:null };
+      return d;
+    }
+  }catch(e){}
+  return { logs:{}, settings:{ pesoInicial:null, pesoMeta:null } };
+}
+function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
+
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function getLog(dateKey){
+  dateKey = dateKey || todayKey();
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, kcal:null, notes:'' };
+  return DATA.logs[dateKey];
+}
+
+/* ====================== NAV ====================== */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector('nav.bottom button[data-tab="'+name+'"]').classList.add('active');
+  if(name==='painel') renderPainel();
+}
+
+/* ====================== HOJE: ÁGUA ====================== */
+function renderAgua(){
+  const log = getLog();
+  const pct = Math.min(100, Math.round(log.water / PLAN.metas.agua * 100));
+  document.getElementById('waterBar').style.width = pct+'%';
+  document.getElementById('waterLabel').textContent = (log.water/1000).toFixed(2)+'L / '+(PLAN.metas.agua/1000)+'L';
+  document.getElementById('waterPct').textContent = pct+'%';
+}
+function addWater(ml){
+  const log = getLog();
+  log.water += ml;
+  saveData(); renderAgua();
+}
+function resetWater(){
+  const log = getLog();
+  log.water = 0;
+  saveData(); renderAgua();
+}
+
+/* ====================== HOJE: PESO ====================== */
+function renderPeso(){
+  const log = getLog();
+  document.getElementById('weightInput').value = log.weight ?? '';
+  const ini = DATA.settings.pesoInicial;
+  const meta = DATA.settings.pesoMeta;
+  const diff = (log.weight!=null && ini!=null) ? (log.weight - ini) : null;
+  const el = document.getElementById('weightDiff');
+  if(diff!=null){
+    const sign = diff>0?'+':'';
+    el.textContent = `Início: ${ini}kg → hoje: ${sign}${diff.toFixed(1)}kg${meta!=null?' | meta: '+meta+'kg':''}`;
+  } else if(ini==null){
+    el.textContent = 'Configure seu peso inicial e meta na aba Painel → Dados.';
+  } else { el.textContent = ''; }
+}
+function setWeight(v){
+  const log = getLog();
+  log.weight = v ? parseFloat(v) : null;
+  saveData(); renderPeso();
+}
+
+/* ====================== CONFIG: PESO INICIAL / META ====================== */
+function renderSettings(){
+  document.getElementById('settingsPesoInicial').value = DATA.settings.pesoInicial ?? '';
+  document.getElementById('settingsPesoMeta').value = DATA.settings.pesoMeta ?? '';
+}
+function setSettingsField(field, val){
+  DATA.settings[field] = val ? parseFloat(val) : null;
+  saveData();
+  renderPeso();
+  const metaEl = document.getElementById('metaPesoStat');
+  if(metaEl) metaEl.textContent = DATA.settings.pesoMeta!=null ? DATA.settings.pesoMeta+'kg' : '-';
+}
+
+/* ====================== HOJE: TREINO ====================== */
+function setWorkoutType(type){
+  const log = getLog();
+  log.workoutType = type;
+  saveData();
+  renderWorkoutArea();
+}
+
+function exerciseRow(exId, exDef, storeObj, kind){
+  // kind: 'carga' (sets com peso/reps) ou 'casa' (checklist)
+  const data = storeObj[exId] || (storeObj[exId] = { nome: exDef.nome, sub:'', sets:[] });
+  let html = `<div class="exercise">
+    <div class="ex-title"><span>${data.sub || exDef.nome}</span></div>
+    <div class="ex-meta">${exDef.series ? exDef.series+'x'+exDef.reps : exDef.desc||''}</div>`;
+  if(exDef.obs) html += `<div class="ex-obs">⚠️ ${exDef.obs}</div>`;
+  if(exDef.alternativas){
+    html += `<select onchange="setSub('${exId}','${kind}',this.value)" style="margin-top:8px;">
+      <option value="">Substituir exercício (se necessário)...</option>`;
+    exDef.alternativas.forEach(alt=>{
+      html += `<option value="${alt}" ${data.sub===alt?'selected':''}>${alt}</option>`;
+    });
+    html += `</select>`;
+  }
+  if(kind==='carga'){
+    const n = exDef.series;
+    html += `<div class="sets">`;
+    for(let i=0;i<n;i++){
+      const s = data.sets[i] || {peso:'', reps:'', done:false};
+      html += `<div class="set-row">
+        <div class="set-idx">${i+1}</div>
+        <input type="number" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
+        <input type="number" placeholder="reps" value="${s.reps}" oninput="setSetField('${exId}','${kind}',${i},'reps',this.value)">
+        <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',${i})">${s.done?'✓':''}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  } else if(kind==='casa'){
+    const s = data.sets[0] || {done:false};
+    html += `<div class="sets"><div class="set-row">
+      <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',0)" style="width:38px;">${s.done?'✓':''}</div>
+      <span style="font-size:13px; color:var(--muted);">Feito</span>
+    </div></div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function setSub(exId, kind, alt){
+  const log = getLog();
+  const store = kind==='carga' ? log.exercises : log.treinoCasa;
+  const exDef = (kind==='carga'?PLAN.treinoA:PLAN.treinoCasa).find(e=> (e.id||e.nome)===exId);
+  if(!store[exId]) store[exId] = { nome: exDef.nome, sub:'', sets:[] };
+  store[exId].sub = alt;
+  saveData(); renderWorkoutArea();
+}
+function setSetField(exId, kind, idx, field, val){
+  const log = getLog();
+  const store = kind==='carga' ? log.exercises : log.treinoCasa;
+  if(!store[exId].sets[idx]) store[exId].sets[idx] = {peso:'',reps:'',done:false};
+  store[exId].sets[idx][field] = val;
+  saveData();
+}
+function toggleSetDone(exId, kind, idx){
+  const log = getLog();
+  const store = kind==='carga' ? log.exercises : log.treinoCasa;
+  if(!store[exId].sets[idx]) store[exId].sets[idx] = {peso:'',reps:'',done:false};
+  store[exId].sets[idx].done = !store[exId].sets[idx].done;
+  saveData(); renderWorkoutArea();
+}
+
+function renderWorkoutArea(){
+  const log = getLog();
+  document.getElementById('workoutType').value = log.workoutType || '';
+  const area = document.getElementById('workoutArea');
+  if(log.workoutType==='treinoA'){
+    log.exercises = log.exercises || {};
+    let h='';
+    PLAN.treinoA.forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
+    area.innerHTML = h;
+  } else if(log.workoutType==='treinoCasa'){
+    log.treinoCasa = log.treinoCasa || {};
+    let h='';
+    PLAN.treinoCasa.forEach((ex,i)=> h += exerciseRow('casa'+i, ex, log.treinoCasa, 'casa'));
+    area.innerHTML = h;
+  } else if(log.workoutType==='corrida'){
+    log.corrida = log.corrida || {tipo:'', tempo:'', distancia:''};
+    area.innerHTML = `
+      <label>Tipo</label>
+      <select onchange="setCorridaField('tipo',this.value)">
+        <option value="">Selecione...</option>
+        <option value="Caminhada" ${log.corrida.tipo==='Caminhada'?'selected':''}>Caminhada</option>
+        <option value="Intervalado" ${log.corrida.tipo==='Intervalado'?'selected':''}>Intervalado (trote/caminhada)</option>
+        <option value="Corrida contínua" ${log.corrida.tipo==='Corrida contínua'?'selected':''}>Corrida contínua</option>
+      </select>
+      <div class="row" style="margin-top:8px;">
+        <div><label>Tempo (min)</label><input type="number" value="${log.corrida.tempo}" oninput="setCorridaField('tempo',this.value)"></div>
+        <div><label>Distância (km, opcional)</label><input type="number" step="0.1" value="${log.corrida.distancia}" oninput="setCorridaField('distancia',this.value)"></div>
+      </div>`;
+  } else if(log.workoutType==='descanso'){
+    area.innerHTML = `<p class="muted">Dia de descanso — sem problema, descanso também é parte do plano.</p>`;
+  } else {
+    area.innerHTML = '';
+  }
+}
+function setCorridaField(field, val){
+  const log = getLog();
+  log.corrida = log.corrida || {};
+  log.corrida[field] = val;
+  saveData();
+}
+
+/* ====================== HOJE: REFEIÇÕES ====================== */
+function renderMeals(){
+  const log = getLog();
+  log.meals = log.meals || {};
+  let h='';
+  Object.keys(PLAN.cardapio).forEach(meal=>{
+    h += `<div class="meal"><div class="meal-title">${meal}</div>`;
+    PLAN.cardapio[meal].forEach(opt=>{
+      const sel = log.meals[meal]===opt;
+      h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.replace(/'/g,"\\'")}\`)">${opt}</button>`;
+    });
+    h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
+    h += `</div>`;
+  });
+  document.getElementById('mealsArea').innerHTML = h;
+  document.getElementById('kcalInput').value = log.kcal ?? '';
+}
+function setMeal(meal, opt){
+  const log = getLog();
+  log.meals[meal] = (log.meals[meal]===opt) ? '' : opt;
+  saveData(); renderMeals();
+}
+function setMealOutro(meal, val){
+  const log = getLog();
+  log.meals[meal+'_outro'] = val;
+  saveData();
+}
+function setKcal(v){
+  const log = getLog();
+  log.kcal = v ? parseInt(v) : null;
+  saveData();
+}
+function setNotes(v){
+  const log = getLog();
+  log.notes = v;
+  saveData();
+}
+function renderNotes(){
+  document.getElementById('notesInput').value = getLog().notes || '';
+}
+
+/* ====================== TAB TREINO (referência) ====================== */
+function renderPlanRef(){
+  document.getElementById('planTreinoA').innerHTML = PLAN.treinoA.map(ex=>`
+    <div class="exercise">
+      <div class="ex-title"><span>${ex.nome}</span><span class="muted">${ex.series}x${ex.reps}</span></div>
+      ${ex.obs?`<div class="ex-obs">⚠️ ${ex.obs}</div>`:''}
+      ${ex.alternativas?`<div class="ex-meta">Alternativas: ${ex.alternativas.join(', ')}</div>`:''}
+    </div>`).join('');
+
+  document.getElementById('planCorrida').innerHTML = PLAN.corrida.map(f=>`
+    <div class="exercise"><div class="ex-title"><span>${f.fase}</span></div><div class="ex-meta">${f.desc}</div></div>`).join('')
+    + `<p class="muted" style="margin-top:8px;">Avance de fase só quando a atual estiver confortável — sem pressa.</p>`;
+
+  document.getElementById('planCasa').innerHTML = PLAN.treinoCasa.map(ex=>`
+    <div class="exercise"><div class="ex-title"><span>${ex.nome}</span></div><div class="ex-meta">${ex.desc}</div></div>`).join('');
+}
+
+/* ====================== TAB DIETA (referência) ====================== */
+function renderCardapioRef(){
+  let h='';
+  Object.keys(PLAN.cardapio).forEach(meal=>{
+    h += `<h3>${meal}</h3><ul style="font-size:13px; line-height:1.6; padding-left:20px; margin:0 0 8px;">`;
+    PLAN.cardapio[meal].forEach(opt=> h += `<li>${opt}</li>`);
+    h += `</ul>`;
+  });
+  document.getElementById('cardapioRef').innerHTML = h;
+}
+
+/* ====================== PAINEL ====================== */
+function allDatesSorted(){
+  return Object.keys(DATA.logs).sort();
+}
+
+function renderBadges(){
+  const dates = allDatesSorted();
+  // streak de água
+  let waterStreak=0, trainStreak=0;
+  for(let i=dates.length-1;i>=0;i--){
+    const log = DATA.logs[dates[i]];
+    if(log.water >= PLAN.metas.agua) waterStreak++; else break;
+  }
+  for(let i=dates.length-1;i>=0;i--){
+    const log = DATA.logs[dates[i]];
+    if(log.workoutType && log.workoutType!=='descanso') trainStreak++; else break;
+  }
+  let lossBadge=null;
+  const weighed = dates.filter(d=>DATA.logs[d].weight!=null);
+  if(weighed.length && DATA.settings.pesoInicial!=null){
+    const last = DATA.logs[weighed[weighed.length-1]].weight;
+    const diff = DATA.settings.pesoInicial - last;
+    if(diff>=1) lossBadge = `🏆 -${diff.toFixed(1)}kg desde o início`;
+  }
+  let html = '';
+  html += `<span class="badge ${waterStreak>0?'on':''}">💧 Streak água: ${waterStreak} dia(s)</span>`;
+  html += `<span class="badge ${trainStreak>0?'on':''}">🔥 Streak treino: ${trainStreak} dia(s)</span>`;
+  if(lossBadge) html += `<span class="badge on">${lossBadge}</span>`;
+  document.getElementById('badges').innerHTML = html;
+}
+
+let chartPeso, chartAgua, chartCargas;
+
+function renderChartPeso(){
+  const dates = allDatesSorted().filter(d=>DATA.logs[d].weight!=null);
+  const labels = dates.map(d=>d.slice(5));
+  const values = dates.map(d=>DATA.logs[d].weight);
+  if(chartPeso) chartPeso.destroy();
+  chartPeso = new Chart(document.getElementById('chartPeso'), {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Peso (kg)', data:values, borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,.15)', tension:.3, fill:true},
+    ]},
+    options:{ scales:{ y:{ suggestedMin: DATA.settings.pesoMeta!=null?DATA.settings.pesoMeta-2:undefined, suggestedMax: DATA.settings.pesoInicial!=null?DATA.settings.pesoInicial+2:undefined, ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} }, x:{ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'}} }, plugins:{legend:{labels:{color:'#eef1f5'}}} }
+  });
+  const reco = document.getElementById('pesoReco');
+  if(values.length>=2){
+    const diff = values[values.length-1] - values[0];
+    reco.textContent = diff<0 ? `Tendência de queda: ${Math.abs(diff).toFixed(1)}kg desde o primeiro registro. Continue assim.` : `Peso estável/subindo no período — vale revisar o cardápio com o nutri-dieta.`;
+  } else {
+    reco.textContent = 'Registre seu peso periodicamente (semanal é suficiente) pra ver a curva aqui.';
+  }
+}
+
+function renderChartAgua(){
+  const dates = allDatesSorted().slice(-7);
+  const labels = dates.map(d=>d.slice(5));
+  const values = dates.map(d=>DATA.logs[d].water/1000);
+  if(chartAgua) chartAgua.destroy();
+  chartAgua = new Chart(document.getElementById('chartAgua'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Água (L)', data:values, backgroundColor:'#38bdf8'},
+    ]},
+    options:{ scales:{ y:{ suggestedMax: (PLAN.metas.agua/1000)+0.5, ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} }, x:{ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'}} }, plugins:{legend:{labels:{color:'#eef1f5'}}} }
+  });
+}
+
+function fillExerciseSelect(){
+  const sel = document.getElementById('exSelect');
+  sel.innerHTML = PLAN.treinoA.filter(e=>e.series && typeof e.reps==='number'? true: e.series).map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+}
+
+function renderChartCargas(){
+  const exId = document.getElementById('exSelect').value;
+  const dates = allDatesSorted().filter(d=> DATA.logs[d].exercises && DATA.logs[d].exercises[exId] && DATA.logs[d].exercises[exId].sets.some(s=>s.peso));
+  const labels = dates.map(d=>d.slice(5));
+  const values = dates.map(d=>{
+    const sets = DATA.logs[d].exercises[exId].sets.filter(s=>s.peso);
+    return Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+  });
+  if(chartCargas) chartCargas.destroy();
+  chartCargas = new Chart(document.getElementById('chartCargas'), {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Carga máxima (kg)', data:values, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,.15)', tension:.3, fill:true},
+    ]},
+    options:{ scales:{ y:{ ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} }, x:{ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'}} }, plugins:{legend:{labels:{color:'#eef1f5'}}} }
+  });
+}
+
+function renderCorridaHist(){
+  const dates = allDatesSorted().filter(d=>DATA.logs[d].workoutType==='corrida' && DATA.logs[d].corrida && DATA.logs[d].corrida.tipo);
+  if(!dates.length){ document.getElementById('corridaHist').textContent='Sem registros de corrida ainda.'; return; }
+  let h = '<table style="width:100%; font-size:12px; border-collapse:collapse;">';
+  h += '<tr style="color:var(--muted);"><td>Data</td><td>Tipo</td><td>Tempo</td><td>Distância</td></tr>';
+  dates.slice(-10).forEach(d=>{
+    const c = DATA.logs[d].corrida;
+    h += `<tr><td>${d.slice(5)}</td><td>${c.tipo}</td><td>${c.tempo||'-'} min</td><td>${c.distancia||'-'} km</td></tr>`;
+  });
+  h += '</table>';
+  document.getElementById('corridaHist').innerHTML = h;
+}
+
+function renderFreqGrid(){
+  const grid = document.getElementById('freqGrid');
+  let h='';
+  for(let i=13;i>=0;i--){
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const log = DATA.logs[key];
+    let color = '#2b2f3a';
+    if(log && log.workoutType && log.workoutType!=='descanso') color = '#4ade80';
+    else if(log && log.workoutType==='descanso') color = '#fbbf24';
+    h += `<div style="aspect-ratio:1; border-radius:6px; background:${color}; display:flex; align-items:center; justify-content:center; font-size:10px; color:#0f1115;">${d.getDate()}</div>`;
+  }
+  grid.innerHTML = h;
+}
+
+function renderPainel(){
+  renderSettings();
+  renderBadges();
+  renderChartPeso();
+  renderChartAgua();
+  renderChartCargas();
+  renderCorridaHist();
+  renderFreqGrid();
+}
+
+/* ====================== EXPORT / IMPORT ====================== */
+function exportData(){
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'saude-italo-'+todayKey()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      DATA = JSON.parse(e.target.result);
+      saveData();
+      initToday();
+      renderPainel();
+      alert('Dados importados!');
+    }catch(err){ alert('Erro ao importar: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* ====================== INIT ====================== */
+function initToday(){
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+  renderAgua();
+  renderPeso();
+  renderWorkoutArea();
+  renderMeals();
+  renderNotes();
+  const metaEl = document.getElementById('metaPesoStat');
+  if(metaEl) metaEl.textContent = DATA.settings.pesoMeta!=null ? DATA.settings.pesoMeta+'kg' : '-';
+}
+
+renderPlanRef();
+renderCardapioRef();
+fillExerciseSelect();
+initToday();
+</script>
+</body>
+</html>
