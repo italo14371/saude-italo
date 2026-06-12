@@ -43,7 +43,7 @@
   }
   label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
   .row{display:flex; gap:8px;}
-  .row > *{flex:1;}
+  .row > *{flex:1; min-width:0;}
 
   .exercise{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; background:var(--card2);}
   .exercise .ex-title{font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:6px;}
@@ -61,9 +61,9 @@
   .opt{display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px;}
   .opt.selected{border-color:var(--accent); background:rgba(74,222,128,.12); color:var(--accent);}
 
-  .food-item{display:flex; justify-content:space-between; align-items:center; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:13px;}
+  .food-item{display:flex; justify-content:space-between; align-items:flex-start; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:6px; font-size:13px;}
   .food-item .fi-info{flex:1;}
-  .food-item .fi-macros{color:var(--muted); font-size:11px;}
+  .fi-macros{color:var(--muted); font-size:11px; margin-top:2px;}
   .food-item .fi-del{background:none; border:none; color:var(--danger); font-size:16px; padding:0 0 0 10px; flex:none;}
   .add-food-row{display:flex; gap:6px; margin-top:8px; align-items:flex-end;}
   .add-food-row select{flex:2;}
@@ -73,11 +73,11 @@
   .food-card .fc-row{display:flex; justify-content:space-between; align-items:center;}
   .food-card .fc-macros{color:var(--muted); font-size:12px; margin-top:2px;}
 
-  .slot{border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:6px; background:var(--card2);}
+  .slot{border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:6px; background:var(--card2); font-size:13px;}
   .slot-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
-  .slot-row .fi-macros{margin-top:2px;}
   .slot-row button{flex:none; background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; width:30px; height:30px; font-size:14px;}
   .slot-edit{margin-top:8px; padding-top:8px; border-top:1px solid var(--border);}
+  .meal-total{margin-top:8px; padding-top:6px; border-top:1px dashed var(--border); font-size:12px; color:var(--muted); text-align:right;}
   .exercise.selected{border-color:var(--accent); background:rgba(74,222,128,.08);}
 
   nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
@@ -168,6 +168,11 @@
     <div class="card">
       <h2>🕐 Jejum de hoje</h2>
       <div id="jejumArea"></div>
+    </div>
+
+    <div class="card">
+      <h2>💊 Suplementos de hoje</h2>
+      <div id="suplArea"></div>
     </div>
 
     <div class="card">
@@ -340,10 +345,14 @@
 const PLAN = {
   metas: { agua: 3500, kcal: 1950, prot: 170 },
   jejum: [
-    { id:'padrao12', nome:'Jejum padrão (12h)', desc:'Jejum noturno normal, ~12h (ex: 20h às 8h)' },
-    { id:'estendido20', nome:'Jejum estendido (20h)', desc:'Jejum de 20h, terminando às 8h da manhã' },
-    { id:'ateAlmoco', nome:'Jejum até o almoço', desc:'Pula o café da manhã — primeira refeição é o almoço' },
-    { id:'nenhum', nome:'Sem jejum hoje', desc:'Café da manhã normal, sem restrição' }
+    { id:'jejum12', nome:'Jejum 12h', horas:12 },
+    { id:'jejum16', nome:'Jejum 16h (estendido)', horas:16 },
+    { id:'nenhum', nome:'Sem jejum hoje', horas:0 }
+  ],
+  suplementos: [
+    { id:'beterraba', nome:'Shot de pó de beterraba' },
+    { id:'maca', nome:'Shot de maca peruana' },
+    { id:'vitC', nome:'Vitamina C' }
   ],
   grade: [
     { dia:'Domingo', tipo:'descanso', desc:'Descanso (opcional: Treino Casa - Plano B)' },
@@ -497,9 +506,10 @@ function todayKeyOf(d){
 }
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, kcal:null, jejum:'', notes:'' };
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, kcal:null, jejum:'', jejumFim:'', suplementos:{}, notes:'' };
   if(!DATA.logs[dateKey].sono) DATA.logs[dateKey].sono = {dormiu:'',acordou:'',qualidade:''};
   if(!DATA.logs[dateKey].cardapioSel) DATA.logs[dateKey].cardapioSel = {};
+  if(!DATA.logs[dateKey].suplementos) DATA.logs[dateKey].suplementos = {};
   return DATA.logs[dateKey];
 }
 
@@ -705,14 +715,49 @@ function renderJejum(){
   let h='';
   PLAN.jejum.forEach(opt=>{
     const sel = log.jejum===opt.id;
-    h += `<button class="opt ${sel?'selected':''}" onclick="setJejum('${opt.id}')">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.desc}</span></button>`;
+    h += `<button class="opt ${sel?'selected':''}" onclick="setJejum('${opt.id}')">${opt.nome}</button>`;
   });
+  const cur = PLAN.jejum.find(o=>o.id===log.jejum);
+  if(cur && cur.horas>0){
+    h += `<div class="row" style="margin-top:8px;">
+      <div><label>Horário que termina o jejum</label><input type="time" value="${log.jejumFim||''}" onchange="setJejumFim(this.value)"></div>
+    </div>`;
+    if(log.jejumFim){
+      const [hh,mm] = log.jejumFim.split(':').map(Number);
+      let startMin = (hh*60+mm) - cur.horas*60;
+      if(startMin<0) startMin+=24*60;
+      const sh = String(Math.floor(startMin/60)).padStart(2,'0');
+      const sm = String(startMin%60).padStart(2,'0');
+      h += `<div class="muted" style="margin-top:6px; font-size:12px;">Início estimado: ${sh}:${sm} · término: ${log.jejumFim}</div>`;
+    }
+  }
   document.getElementById('jejumArea').innerHTML = h;
 }
 function setJejum(id){
   const log = getLog();
   log.jejum = (log.jejum===id) ? '' : id;
   saveData(); renderJejum();
+}
+function setJejumFim(v){
+  const log = getLog();
+  log.jejumFim = v;
+  saveData(); renderJejum();
+}
+function renderSuplementos(){
+  const log = getLog();
+  log.suplementos = log.suplementos || {};
+  let h='';
+  PLAN.suplementos.forEach(s=>{
+    const sel = !!log.suplementos[s.id];
+    h += `<button class="opt ${sel?'selected':''}" onclick="toggleSuplemento('${s.id}')">${sel?'✅':'⬜'} ${s.nome}</button>`;
+  });
+  document.getElementById('suplArea').innerHTML = h;
+}
+function toggleSuplemento(id){
+  const log = getLog();
+  log.suplementos = log.suplementos || {};
+  log.suplementos[id] = !log.suplementos[id];
+  saveData(); renderSuplementos();
 }
 
 const MEAL_ORDER = ['Manhã (jejum ou leve)','Almoço','Café da tarde','Janta','Lanche da noite (se fome forte)'];
@@ -809,15 +854,16 @@ function renderMeals(){
   let totalKcal=0, totalProt=0, totalCarb=0, totalGord=0;
   MEAL_ORDER.forEach(meal=>{
     h += `<div class="meal"><div class="meal-title">${meal}</div>`;
+    let mealKcal=0, mealProt=0, mealCarb=0, mealGord=0;
 
     if(PLAN.cardapioSlots[meal]){
       const r = renderMealSlots(meal);
       h += r.html;
-      totalKcal+=r.kcal; totalProt+=r.prot; totalCarb+=r.carb; totalGord+=r.gord;
+      mealKcal+=r.kcal; mealProt+=r.prot; mealCarb+=r.carb; mealGord+=r.gord;
     } else {
       PLAN.cardapio[meal].forEach(opt=>{
         const sel = log.meals[meal]===opt.nome;
-        if(sel){ totalKcal+=opt.kcal; totalProt+=opt.prot; totalCarb+=opt.carb; totalGord+=opt.gord; }
+        if(sel){ mealKcal+=opt.kcal; mealProt+=opt.prot; mealCarb+=opt.carb; mealGord+=opt.gord; }
         h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.nome.replace(/'/g,"\\'")}\`)">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></button>`;
       });
       h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
@@ -827,8 +873,8 @@ function renderMeals(){
     if(items.length){
       h += `<div style="margin-top:8px;">`;
       items.forEach((it,idx)=>{
-        totalKcal+=it.kcal; totalProt+=it.prot; totalCarb+=it.carb; totalGord+=it.gord;
-        h += `<div class="food-item"><div class="fi-info">${it.nome} — ${it.gramas}g<br><span class="fi-macros">${it.kcal} kcal · P${it.prot} C${it.carb} G${it.gord}</span></div><button class="fi-del" onclick="removeFoodItem('${meal}', ${idx})">✕</button></div>`;
+        mealKcal+=it.kcal; mealProt+=it.prot; mealCarb+=it.carb; mealGord+=it.gord;
+        h += `<div class="food-item"><div class="fi-info">${it.nome} — ${it.gramas}g<div class="fi-macros">${it.kcal} kcal · P${it.prot} C${it.carb} G${it.gord}</div></div><button class="fi-del" onclick="removeFoodItem('${meal}', ${idx})">✕</button></div>`;
       });
       h += `</div>`;
     }
@@ -839,11 +885,14 @@ function renderMeals(){
       <button onclick="addFoodItem('${meal.replace(/'/g,"\\'")}')">+</button>
     </div>`;
 
+    h += `<div class="meal-total">Total: <strong>${Math.round(mealKcal)} kcal</strong> · P${mealProt.toFixed(1)} C${mealCarb.toFixed(1)} G${mealGord.toFixed(1)}</div>`;
+
+    totalKcal+=mealKcal; totalProt+=mealProt; totalCarb+=mealCarb; totalGord+=mealGord;
     h += `</div>`;
   });
   document.getElementById('mealsArea').innerHTML = h;
   document.getElementById('kcalInput').value = log.kcal ?? '';
-  document.getElementById('mealsTotal').innerHTML = `Total marcado: <strong>${Math.round(totalKcal)} kcal</strong> · Proteína ${totalProt.toFixed(1)}g · Carbo ${totalCarb.toFixed(1)}g · Gordura ${totalGord.toFixed(1)}g <span class="muted">(meta: ~${PLAN.metas.kcal} kcal / ~${PLAN.metas.prot}g proteína)</span>`;
+  document.getElementById('mealsTotal').innerHTML = `Total do dia: <strong>${Math.round(totalKcal)} kcal</strong> · Proteína ${totalProt.toFixed(1)}g · Carbo ${totalCarb.toFixed(1)}g · Gordura ${totalGord.toFixed(1)}g <span class="muted">(meta: ~${PLAN.metas.kcal} kcal / ~${PLAN.metas.prot}g proteína)</span>`;
 }
 function addFoodItem(meal){
   const nomeInput = document.getElementById(`foodInput-${meal}`);
@@ -1240,6 +1289,7 @@ function initToday(){
   renderSono();
   renderWorkoutArea();
   renderJejum();
+  renderSuplementos();
   renderFoodDatalist();
   renderCustomFoods();
   renderMeals();
