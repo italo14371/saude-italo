@@ -77,11 +77,16 @@
       <h2>✝️ Leitura bíblica</h2>
       <div class="leitura-hoje" id="bibliaHojeTexto"></div>
       <div class="muted" id="bibliaProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="muted" id="bibliaMetaTexto" style="margin-bottom:8px;"></div>
       <div class="row">
-        <input type="number" id="bibliaMin" placeholder="Minutos" min="0" oninput="setMin('biblia', this.value)">
-      </div>
-      <div class="btn-row">
-        <button class="chip primary" id="bibliaBtn" onclick="marcarLeitura('biblia')">✅ Marquei como lido</button>
+        <div>
+          <label>Capítulos lidos hoje</label>
+          <input type="number" id="bibliaCaps" min="0" oninput="setCapsLidos('biblia', this.value)">
+        </div>
+        <div>
+          <label>Minutos</label>
+          <input type="number" id="bibliaMin" min="0" oninput="setMin('biblia', this.value)">
+        </div>
       </div>
     </div>
 
@@ -89,11 +94,16 @@
       <h2>🏛️ Lições estoicas</h2>
       <div class="leitura-hoje" id="estoicoHojeTexto"></div>
       <div class="muted" id="estoicoProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="muted" id="estoicoMetaTexto" style="margin-bottom:8px;"></div>
       <div class="row">
-        <input type="number" id="estoicoMin" placeholder="Minutos" min="0" oninput="setMin('estoico', this.value)">
-      </div>
-      <div class="btn-row">
-        <button class="chip primary" id="estoicoBtn" onclick="marcarLeitura('estoico')">✅ Marquei como lido</button>
+        <div>
+          <label>Dias/lições lidas hoje</label>
+          <input type="number" id="estoicoCaps" min="0" oninput="setCapsLidos('estoico', this.value)">
+        </div>
+        <div>
+          <label>Minutos</label>
+          <input type="number" id="estoicoMin" min="0" oninput="setMin('estoico', this.value)">
+        </div>
       </div>
     </div>
 
@@ -134,13 +144,28 @@
   <section class="tab" id="tab-planos">
 
     <div class="card">
+      <h2>🎯 Metas diárias</h2>
+      <div class="row">
+        <div>
+          <label>Capítulos da Bíblia/dia</label>
+          <input type="number" id="metaBibliaInput" min="1" oninput="setMeta('metaBibliaCaps', this.value)">
+        </div>
+        <div>
+          <label>Lições estoicas/dia</label>
+          <input type="number" id="metaEstoicoInput" min="1" oninput="setMeta('metaEstoicoDias', this.value)">
+        </div>
+      </div>
+      <p class="muted" style="margin-top:8px;">Se um dia ler mais que a meta, o app já avança a posição de acordo. Se ler menos (ou nada), fica registrado e dá pra compensar depois.</p>
+    </div>
+
+    <div class="card">
       <h2>✝️ Ordem da leitura bíblica (ciclo 1)</h2>
       <div id="bibliaOrdemLista"></div>
     </div>
 
     <div class="card">
       <h2>🏛️ Lições estoicas</h2>
-      <p class="muted">Livro de 366 lições diárias curtas — uma por dia, em ordem sequencial. Sem decisão no dia a dia: só marcar "lido" na aba Hoje.</p>
+      <p class="muted">Livro de 366 lições diárias curtas — uma por dia, em ordem sequencial. Registre quantas leu hoje na aba Hoje.</p>
     </div>
 
     <div class="card">
@@ -189,11 +214,16 @@ let DATA = loadData();
 function loadData(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(d.settings.metaBibliaCaps==null) d.settings.metaBibliaCaps = 1;
+      if(d.settings.metaEstoicoDias==null) d.settings.metaEstoicoDias = 1;
+      return d;
+    }
   }catch(e){}
   return {
     progresso: { bibliaIndex:0, estoicoDia:1 },
-    settings: { livro3Titulo:'' },
+    settings: { livro3Titulo:'', metaBibliaCaps:1, metaEstoicoDias:1 },
     logs: {}
   };
 }
@@ -206,8 +236,8 @@ function todayKey(){
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
   if(!DATA.logs[dateKey]) DATA.logs[dateKey] = {
-    biblia:{ lido:false, capLido:null, min:0 },
-    estoico:{ lido:false, diaLido:null, min:0 },
+    biblia:{ caps:0, min:0 },
+    estoico:{ caps:0, min:0 },
     livro3:{ paginas:0, min:0 }
   };
   return DATA.logs[dateKey];
@@ -227,29 +257,45 @@ function switchTab(name){
 function renderHoje(){
   const log = getLog();
 
-  // Bíblia
-  const idx = Math.min(DATA.progresso.bibliaIndex, BIBLIA_SEQ.length-1);
-  const atual = BIBLIA_SEQ[idx];
-  if(DATA.progresso.bibliaIndex >= BIBLIA_SEQ.length){
+  // Bíblia — posição no início do dia (antes do que já leu hoje)
+  const startIdx = Math.max(0, DATA.progresso.bibliaIndex - log.biblia.caps);
+  if(startIdx >= BIBLIA_SEQ.length){
     document.getElementById('bibliaHojeTexto').textContent = 'Ciclo 1 concluído! 🎉';
   } else {
-    document.getElementById('bibliaHojeTexto').textContent = `Hoje: ${atual.livro} ${atual.cap}`;
+    const de = BIBLIA_SEQ[startIdx];
+    const ateIdx = Math.min(DATA.progresso.bibliaIndex-1, BIBLIA_SEQ.length-1);
+    const ate = BIBLIA_SEQ[Math.max(startIdx, ateIdx)];
+    if(log.biblia.caps>0 && (ate.livro!==de.livro || ate.cap!==de.cap)){
+      document.getElementById('bibliaHojeTexto').textContent = `Hoje: ${de.livro} ${de.cap} até ${ate.livro} ${ate.cap}`;
+    } else {
+      document.getElementById('bibliaHojeTexto').textContent = `Hoje: ${de.livro} ${de.cap}`;
+    }
   }
   document.getElementById('bibliaProgressoTexto').textContent = `${DATA.progresso.bibliaIndex} de ${BIBLIA_SEQ.length} capítulos (${Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)}%)`;
+  const metaBiblia = DATA.settings.metaBibliaCaps;
+  document.getElementById('bibliaMetaTexto').textContent = log.biblia.caps >= metaBiblia
+    ? `✅ Meta do dia cumprida (meta: ${metaBiblia}/dia)`
+    : `Meta do dia: ${metaBiblia} capítulo(s) — faltam ${metaBiblia - log.biblia.caps}`;
+  document.getElementById('bibliaCaps').value = log.biblia.caps || 0;
   document.getElementById('bibliaMin').value = log.biblia.min || '';
-  const bibliaBtn = document.getElementById('bibliaBtn');
-  bibliaBtn.textContent = log.biblia.lido ? '↩️ Desfazer' : '✅ Marquei como lido';
-  bibliaBtn.className = 'chip ' + (log.biblia.lido ? 'primary' : '');
 
   // Estoico
-  document.getElementById('estoicoHojeTexto').textContent = DATA.progresso.estoicoDia > ESTOICO_TOTAL_DIAS
-    ? 'Livro concluído! 🎉'
-    : `Hoje: Dia ${DATA.progresso.estoicoDia} de ${ESTOICO_TOTAL_DIAS}`;
+  const estStart = Math.max(1, DATA.progresso.estoicoDia - log.estoico.caps);
+  const estEnd = Math.max(estStart, DATA.progresso.estoicoDia - 1);
+  if(estStart > ESTOICO_TOTAL_DIAS){
+    document.getElementById('estoicoHojeTexto').textContent = 'Livro concluído! 🎉';
+  } else if(log.estoico.caps>0 && estEnd>estStart){
+    document.getElementById('estoicoHojeTexto').textContent = `Hoje: dias ${estStart} a ${estEnd} de ${ESTOICO_TOTAL_DIAS}`;
+  } else {
+    document.getElementById('estoicoHojeTexto').textContent = `Hoje: dia ${estStart} de ${ESTOICO_TOTAL_DIAS}`;
+  }
   document.getElementById('estoicoProgressoTexto').textContent = `${DATA.progresso.estoicoDia - 1} de ${ESTOICO_TOTAL_DIAS} dias concluídos`;
+  const metaEstoico = DATA.settings.metaEstoicoDias;
+  document.getElementById('estoicoMetaTexto').textContent = log.estoico.caps >= metaEstoico
+    ? `✅ Meta do dia cumprida (meta: ${metaEstoico}/dia)`
+    : `Meta do dia: ${metaEstoico} lição(ões) — faltam ${metaEstoico - log.estoico.caps}`;
+  document.getElementById('estoicoCaps').value = log.estoico.caps || 0;
   document.getElementById('estoicoMin').value = log.estoico.min || '';
-  const estoicoBtn = document.getElementById('estoicoBtn');
-  estoicoBtn.textContent = log.estoico.lido ? '↩️ Desfazer' : '✅ Marquei como lido';
-  estoicoBtn.className = 'chip ' + (log.estoico.lido ? 'primary' : '');
 
   // Livro 3
   const titulo = DATA.settings.livro3Titulo;
@@ -267,30 +313,21 @@ function setMin(tipo, val){
   saveData();
 }
 
-function marcarLeitura(tipo){
+function setCapsLidos(tipo, val){
   const log = getLog();
+  const novo = Math.max(0, val ? parseInt(val) : 0);
+  const delta = novo - log[tipo].caps;
+  log[tipo].caps = novo;
   if(tipo==='biblia'){
-    if(!log.biblia.lido){
-      const idx = Math.min(DATA.progresso.bibliaIndex, BIBLIA_SEQ.length-1);
-      log.biblia.capLido = BIBLIA_SEQ[idx];
-      log.biblia.lido = true;
-      if(DATA.progresso.bibliaIndex < BIBLIA_SEQ.length) DATA.progresso.bibliaIndex++;
-    } else {
-      log.biblia.lido = false;
-      log.biblia.capLido = null;
-      if(DATA.progresso.bibliaIndex > 0) DATA.progresso.bibliaIndex--;
-    }
+    DATA.progresso.bibliaIndex = Math.max(0, Math.min(BIBLIA_SEQ.length, DATA.progresso.bibliaIndex + delta));
   } else if(tipo==='estoico'){
-    if(!log.estoico.lido){
-      log.estoico.diaLido = DATA.progresso.estoicoDia;
-      log.estoico.lido = true;
-      if(DATA.progresso.estoicoDia <= ESTOICO_TOTAL_DIAS) DATA.progresso.estoicoDia++;
-    } else {
-      log.estoico.lido = false;
-      log.estoico.diaLido = null;
-      if(DATA.progresso.estoicoDia > 1) DATA.progresso.estoicoDia--;
-    }
+    DATA.progresso.estoicoDia = Math.max(1, Math.min(ESTOICO_TOTAL_DIAS+1, DATA.progresso.estoicoDia + delta));
   }
+  saveData(); renderHoje();
+}
+
+function setMeta(field, val){
+  DATA.settings[field] = Math.max(1, val ? parseInt(val) : 1);
   saveData(); renderHoje();
 }
 
@@ -320,7 +357,7 @@ function renderProgresso(){
     d.setDate(d.getDate()-i);
     const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const log = DATA.logs[key];
-    const leu = log && (log.biblia.lido || log.estoico.lido || (log.livro3 && (log.livro3.paginas>0 || log.livro3.min>0)));
+    const leu = log && ((log.biblia.caps>0) || (log.estoico.caps>0) || (log.livro3 && (log.livro3.paginas>0 || log.livro3.min>0)));
     if(leu) streak++;
     else if(i>0) break;
     else if(i===0 && !leu) continue;
@@ -349,6 +386,8 @@ function renderProgresso(){
 
 /* ====================== PLANOS ====================== */
 function renderPlanos(){
+  document.getElementById('metaBibliaInput').value = DATA.settings.metaBibliaCaps;
+  document.getElementById('metaEstoicoInput').value = DATA.settings.metaEstoicoDias;
   let h='';
   const idx = DATA.progresso.bibliaIndex;
   BIBLIA_LIVROS.forEach(livro=>{
