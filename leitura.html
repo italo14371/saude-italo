@@ -35,6 +35,7 @@
   .chip:active{transform:scale(.96);}
   .chip.primary{background:rgba(74,222,128,.15); border-color:var(--accent); color:var(--accent);}
   .chip.danger{background:rgba(248,113,113,.12); border-color:var(--danger); color:var(--danger);}
+  .chip.edit{padding:4px 10px; font-size:12px; border-radius:8px;}
 
   select, input[type=text], input[type=number]{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:14px; width:100%;
@@ -75,73 +76,10 @@
   <!-- TAB: HOJE -->
   <section class="tab active" id="tab-hoje">
 
-    <div class="card">
-      <h2>✝️ Leitura bíblica</h2>
-      <div class="leitura-hoje" id="bibliaHojeTexto"></div>
-      <div class="muted" id="bibliaProgressoTexto" style="margin-bottom:8px;"></div>
-      <div class="muted" id="bibliaMetaTexto" style="margin-bottom:8px;"></div>
-      <div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
-        <button class="chip primary" id="bibliaTimerBtn" onclick="toggleTimer('biblia')"></button>
-        <span class="muted" id="bibliaTimer"></span>
-      </div>
-      <div class="row">
-        <div>
-          <label>Capítulos lidos hoje</label>
-          <input type="number" id="bibliaCaps" min="0" oninput="setCapsLidos('biblia', this.value)">
-        </div>
-        <div>
-          <label>Minutos</label>
-          <input type="number" id="bibliaMin" min="0" oninput="setMin('biblia', this.value)">
-        </div>
-      </div>
-      <div class="reco" id="bibliaNotaOntem" style="display:none;"></div>
-      <label>Resumo/anotação de hoje (opcional)</label>
-      <textarea id="bibliaNota" placeholder="O que você entendeu/achou marcante hoje?" oninput="setNota('biblia', this.value)"></textarea>
-    </div>
+    <div id="hojeLivros"></div>
 
     <div class="card">
-      <h2>🏛️ Lições estoicas</h2>
-      <div class="leitura-hoje" id="estoicoHojeTexto"></div>
-      <div class="muted" id="estoicoProgressoTexto" style="margin-bottom:8px;"></div>
-      <div class="muted" id="estoicoMetaTexto" style="margin-bottom:8px;"></div>
-      <div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
-        <button class="chip primary" id="estoicoTimerBtn" onclick="toggleTimer('estoico')"></button>
-        <span class="muted" id="estoicoTimer"></span>
-      </div>
-      <div class="row">
-        <div>
-          <label>Dias/lições lidas hoje</label>
-          <input type="number" id="estoicoCaps" min="0" oninput="setCapsLidos('estoico', this.value)">
-        </div>
-        <div>
-          <label>Minutos</label>
-          <input type="number" id="estoicoMin" min="0" oninput="setMin('estoico', this.value)">
-        </div>
-      </div>
-      <div class="reco" id="estoicoNotaOntem" style="display:none;"></div>
-      <label>Resumo/anotação de hoje (opcional)</label>
-      <textarea id="estoicoNota" placeholder="O que você entendeu/achou marcante hoje?" oninput="setNota('estoico', this.value)"></textarea>
-    </div>
-
-    <div class="card">
-      <h2>💼 Livro 3 (trabalho/vendas)</h2>
-      <div class="leitura-hoje" id="livro3Titulo"></div>
-      <div class="muted" id="livro3ProgressoTexto" style="margin-bottom:4px;"></div>
-      <div class="progress" id="livro3ProgressBar" style="display:none; margin-bottom:8px;"><div id="livro3ProgressFill" style="width:0%;"></div></div>
-      <div class="muted" id="livro3CapsProgressoTexto" style="margin-bottom:8px;"></div>
-      <div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
-        <button class="chip primary" id="livro3TimerBtn" onclick="toggleTimer('livro3')"></button>
-        <span class="muted" id="livro3Timer"></span>
-      </div>
-      <div class="row">
-        <input type="number" id="livro3Paginas" placeholder="Páginas lidas hoje" min="0" oninput="setLivro3('paginas', this.value)">
-        <input type="number" id="livro3Caps" placeholder="Capítulos lidos hoje" min="0" oninput="setLivro3('caps', this.value)">
-        <input type="number" id="livro3Min" placeholder="Minutos" min="0" oninput="setLivro3('min', this.value)">
-      </div>
-      <p class="muted" id="livro3SemTitulo" style="display:none;">Defina o título do livro na aba Planos.</p>
-      <div class="reco" id="livro3NotaOntem" style="display:none;"></div>
-      <label>Resumo/anotação de hoje (opcional)</label>
-      <textarea id="livro3Nota" placeholder="O que você entendeu/achou marcante hoje?" oninput="setNota('livro3', this.value)"></textarea>
+      <button class="chip primary" onclick="adicionarLivro()">➕ Adicionar livro</button>
     </div>
 
   </section>
@@ -154,9 +92,14 @@
       <div class="stat-grid">
         <div class="stat"><div class="v" id="statStreak">0</div><div class="l">dias seguidos lendo algo</div></div>
         <div class="stat"><div class="v" id="statBiblia">0%</div><div class="l">ciclo bíblico concluído</div></div>
-        <div class="stat"><div class="v" id="statEstoico">0/366</div><div class="l">dias de lições estoicas</div></div>
-        <div class="stat"><div class="v" id="statLivro3">0</div><div class="l">páginas lidas (Livro 3)</div></div>
+        <div class="stat"><div class="v" id="statLivro3">0</div><div class="l">páginas lidas (outros livros)</div></div>
+        <div class="stat"><div class="v" id="statLivrosAtivos">0</div><div class="l">livros em andamento</div></div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>📈 Progresso por livro</h2>
+      <div id="progressoLivros"></div>
     </div>
 
     <div class="card">
@@ -200,23 +143,9 @@
     </div>
 
     <div class="card">
-      <h2>💼 Livro 3 — configurar</h2>
-      <label>Título do livro</label>
-      <input type="text" id="livro3TituloInput" placeholder="Ex: Spin Selling" oninput="setLivro3Titulo(this.value)">
-      <div class="row" style="margin-top:8px;">
-        <div>
-          <label>Total de páginas do livro</label>
-          <input type="number" id="livro3TotalPaginasInput" min="0" placeholder="Ex: 240" oninput="setLivro3Config('livro3TotalPaginas', this.value)">
-        </div>
-        <div>
-          <label>Total de capítulos</label>
-          <input type="number" id="livro3TotalCapsInput" min="0" placeholder="Ex: 12" oninput="setLivro3Config('livro3TotalCapitulos', this.value)">
-        </div>
-      </div>
-      <p class="muted" style="margin-top:8px;">Esses dados ficam só no seu celular (localStorage), não vão pro código do app. Preencha o total de páginas e/ou capítulos pra ver a barra de progresso na aba Hoje.</p>
-      <div class="btn-row">
-        <button class="chip danger" onclick="concluirLivro3()">✅ Concluir livro e começar outro</button>
-      </div>
+      <h2>📚 Outros livros</h2>
+      <p class="muted" style="margin-bottom:8px;">Configure o total de páginas/capítulos de cada livro adicionado na aba Hoje. Esses dados ficam só no seu celular (localStorage).</p>
+      <div id="outrosLivrosList"></div>
     </div>
 
   </section>
@@ -255,29 +184,64 @@ const ESTOICO_TOTAL_DIAS = 366;
 const STORE_KEY = 'leitura_italo_v1';
 let DATA = loadData();
 
+function defaultData(){
+  return {
+    livros: [
+      { id:'biblia', tipo:'biblia', nome:'Leitura bíblica', ativo:true },
+      { id:'estoico', tipo:'estoico', nome:'Lições estoicas', ativo:true }
+    ],
+    progresso: { bibliaIndex:0, estoicoDia:1 },
+    settings: { metaBibliaCaps:1, metaEstoicoDias:1 },
+    logs: {},
+    activeTimers: {},
+    livrosConcluidos: []
+  };
+}
+
+function migrateData(d){
+  if(!d.livros){
+    d.livros = [
+      { id:'biblia', tipo:'biblia', nome:'Leitura bíblica', ativo:true },
+      { id:'estoico', tipo:'estoico', nome:'Lições estoicas', ativo:true }
+    ];
+    if(d.settings && d.settings.livro3Titulo){
+      d.livros.push({
+        id:'livro3', tipo:'generico', nome:d.settings.livro3Titulo, ativo:true,
+        totalPaginas: d.settings.livro3TotalPaginas || null,
+        totalCapitulos: d.settings.livro3TotalCapitulos || null,
+        paginasLidas: (d.progresso && d.progresso.livro3Paginas) || 0,
+        capsLidas: (d.progresso && d.progresso.livro3Caps) || 0
+      });
+    }
+  }
+  if(!d.settings) d.settings = {};
+  if(d.settings.metaBibliaCaps==null) d.settings.metaBibliaCaps = 1;
+  if(d.settings.metaEstoicoDias==null) d.settings.metaEstoicoDias = 1;
+  if(!d.progresso) d.progresso = { bibliaIndex:0, estoicoDia:1 };
+  if(!d.logs) d.logs = {};
+  if(!d.activeTimers) d.activeTimers = {};
+  if(!d.livrosConcluidos) d.livrosConcluidos = [];
+  d.livros.forEach(l=>{
+    if(l.ativo==null) l.ativo = true;
+    if(l.tipo==='generico'){
+      if(l.paginasLidas==null) l.paginasLidas = 0;
+      if(l.capsLidas==null) l.capsLidas = 0;
+      if(l.totalPaginas===undefined) l.totalPaginas = null;
+      if(l.totalCapitulos===undefined) l.totalCapitulos = null;
+    }
+  });
+}
+
 function loadData(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
     if(raw){
       const d = JSON.parse(raw);
-      if(d.settings.metaBibliaCaps==null) d.settings.metaBibliaCaps = 1;
-      if(d.settings.metaEstoicoDias==null) d.settings.metaEstoicoDias = 1;
-      if(d.settings.livro3TotalPaginas===undefined) d.settings.livro3TotalPaginas = null;
-      if(d.settings.livro3TotalCapitulos===undefined) d.settings.livro3TotalCapitulos = null;
-      if(d.progresso.livro3Paginas==null) d.progresso.livro3Paginas = Object.values(d.logs).reduce((s,l)=> s + (l.livro3? l.livro3.paginas||0 : 0), 0);
-      if(d.progresso.livro3Caps==null) d.progresso.livro3Caps = Object.values(d.logs).reduce((s,l)=> s + (l.livro3? l.livro3.caps||0 : 0), 0);
-      if(!d.activeTimers) d.activeTimers = {};
-      if(!d.livrosConcluidos) d.livrosConcluidos = [];
+      migrateData(d);
       return d;
     }
   }catch(e){}
-  return {
-    progresso: { bibliaIndex:0, estoicoDia:1, livro3Paginas:0, livro3Caps:0 },
-    settings: { livro3Titulo:'', metaBibliaCaps:1, metaEstoicoDias:1, livro3TotalPaginas:null, livro3TotalCapitulos:null },
-    logs: {},
-    activeTimers: {},
-    livrosConcluidos: []
-  };
+  return defaultData();
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
 
@@ -285,15 +249,25 @@ function todayKey(){
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+function yesterdayKey(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = {
-    biblia:{ caps:0, min:0, nota:'' },
-    estoico:{ caps:0, min:0, nota:'' },
-    livro3:{ paginas:0, caps:0, min:0, nota:'' }
-  };
-  if(DATA.logs[dateKey].livro3.caps===undefined) DATA.logs[dateKey].livro3.caps = 0;
-  return DATA.logs[dateKey];
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = {};
+  const log = DATA.logs[dateKey];
+  DATA.livros.forEach(l=>{
+    if(!log[l.id]) log[l.id] = { caps:0, min:0, nota:'', paginas:0 };
+    if(log[l.id].paginas===undefined) log[l.id].paginas = 0;
+    if(log[l.id].caps===undefined) log[l.id].caps = 0;
+  });
+  return log;
+}
+
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 /* ====================== NAV ====================== */
@@ -306,37 +280,27 @@ function switchTab(name){
   if(name==='planos') renderPlanos();
 }
 
-/* ====================== HOJE ====================== */
-function renderNotaOntem(tipo, elId){
-  const ontem = DATA.logs[yesterdayKey()];
-  const el = document.getElementById(elId);
-  if(ontem && ontem[tipo] && ontem[tipo].nota){
-    el.style.display = 'block';
-    el.textContent = '📝 Ontem você escreveu: ' + ontem[tipo].nota;
-  } else {
-    el.style.display = 'none';
-  }
-}
-
 /* ====================== CRONÔMETRO ====================== */
-function toggleTimer(tipo){
+function toggleTimer(id){
   const log = getLog();
-  if(DATA.activeTimers[tipo]){
-    const elapsedMin = Math.max(1, Math.round((Date.now() - DATA.activeTimers[tipo])/60000));
-    log[tipo].min = (log[tipo].min||0) + elapsedMin;
-    DATA.activeTimers[tipo] = null;
+  if(DATA.activeTimers[id]){
+    const elapsedMin = Math.max(1, Math.round((Date.now() - DATA.activeTimers[id])/60000));
+    log[id].min = (log[id].min||0) + elapsedMin;
+    DATA.activeTimers[id] = null;
   } else {
-    DATA.activeTimers[tipo] = Date.now();
+    DATA.activeTimers[id] = Date.now();
   }
-  saveData(); renderHoje();
+  saveData();
+  document.getElementById(id+'-min').value = log[id].min || '';
+  updateTimerDisplays();
 }
 function updateTimerDisplays(){
-  ['biblia','estoico','livro3'].forEach(tipo=>{
-    const btn = document.getElementById(tipo+'TimerBtn');
-    const el = document.getElementById(tipo+'Timer');
+  DATA.livros.filter(l=>l.ativo).forEach(l=>{
+    const btn = document.getElementById(l.id+'-timerbtn');
+    const el = document.getElementById(l.id+'-timer');
     if(!btn || !el) return;
-    if(DATA.activeTimers[tipo]){
-      const mins = Math.floor((Date.now()-DATA.activeTimers[tipo])/60000);
+    if(DATA.activeTimers[l.id]){
+      const mins = Math.floor((Date.now()-DATA.activeTimers[l.id])/60000);
       btn.textContent = '⏹️ Finalizar leitura';
       btn.classList.remove('primary'); btn.classList.add('danger');
       el.textContent = `⏱️ Lendo há ${mins} min`;
@@ -349,113 +313,211 @@ function updateTimerDisplays(){
 }
 setInterval(updateTimerDisplays, 30000);
 
+/* ====================== HOJE ====================== */
+function notaOntemHtml(id){
+  const ontem = DATA.logs[yesterdayKey()];
+  if(ontem && ontem[id] && ontem[id].nota){
+    return `<div class="reco">📝 Ontem você escreveu: ${escapeHtml(ontem[id].nota)}</div>`;
+  }
+  return '';
+}
+
+function renderLivroCardHoje(l, log){
+  const llog = log[l.id] || { caps:0, min:0, nota:'', paginas:0 };
+  const nota = notaOntemHtml(l.id);
+  const notaTextarea = `<label>Resumo/anotação de hoje (opcional)</label>
+      <textarea oninput="setNota('${l.id}', this.value)" placeholder="O que você entendeu/achou marcante hoje?">${escapeHtml(llog.nota)}</textarea>`;
+  const timerRow = `<div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
+        <button class="chip primary" id="${l.id}-timerbtn" onclick="toggleTimer('${l.id}')"></button>
+        <span class="muted" id="${l.id}-timer"></span>
+      </div>`;
+
+  if(l.tipo==='biblia'){
+    return `<div class="card">
+      <h2>✝️ ${escapeHtml(l.nome)}</h2>
+      <div class="leitura-hoje" id="${l.id}-hoje"></div>
+      <div class="muted" id="${l.id}-progresso" style="margin-bottom:8px;"></div>
+      <div class="muted" id="${l.id}-meta" style="margin-bottom:8px;"></div>
+      ${timerRow}
+      <div class="row">
+        <div>
+          <label>Capítulos lidos hoje</label>
+          <input type="number" id="${l.id}-caps" min="0" value="${llog.caps||0}" oninput="setCapsLidos('${l.id}', this.value)">
+        </div>
+        <div>
+          <label>Minutos</label>
+          <input type="number" id="${l.id}-min" min="0" value="${llog.min||''}" oninput="setMin('${l.id}', this.value)">
+        </div>
+      </div>
+      ${nota}
+      ${notaTextarea}
+    </div>`;
+  }
+
+  if(l.tipo==='estoico'){
+    return `<div class="card">
+      <h2>🏛️ ${escapeHtml(l.nome)} <button class="chip edit" onclick="renomearLivro('${l.id}')">✏️</button></h2>
+      <div class="leitura-hoje" id="${l.id}-hoje"></div>
+      <div class="muted" id="${l.id}-progresso" style="margin-bottom:8px;"></div>
+      <div class="muted" id="${l.id}-meta" style="margin-bottom:8px;"></div>
+      ${timerRow}
+      <div class="row">
+        <div>
+          <label>Dias/lições lidas hoje</label>
+          <input type="number" id="${l.id}-caps" min="0" value="${llog.caps||0}" oninput="setCapsLidos('${l.id}', this.value)">
+        </div>
+        <div>
+          <label>Minutos</label>
+          <input type="number" id="${l.id}-min" min="0" value="${llog.min||''}" oninput="setMin('${l.id}', this.value)">
+        </div>
+      </div>
+      ${nota}
+      ${notaTextarea}
+    </div>`;
+  }
+
+  // genérico
+  const barDisplay = l.totalPaginas ? 'block' : 'none';
+  return `<div class="card">
+    <h2>📘 ${escapeHtml(l.nome)} <button class="chip edit" onclick="renomearLivro('${l.id}')">✏️</button></h2>
+    <div class="muted" id="${l.id}-progresso" style="margin-bottom:4px;"></div>
+    <div class="progress" id="${l.id}-bar" style="display:${barDisplay}; margin-bottom:8px;"><div id="${l.id}-fill" style="width:0%;"></div></div>
+    <div class="muted" id="${l.id}-capsprogresso" style="margin-bottom:8px;"></div>
+    ${timerRow}
+    <div class="row">
+      <input type="number" placeholder="Páginas lidas hoje" min="0" value="${llog.paginas||''}" oninput="setPaginas('${l.id}', this.value)">
+      <input type="number" placeholder="Capítulos lidos hoje" min="0" value="${llog.caps||''}" oninput="setCapsLidos('${l.id}', this.value)">
+      <input type="number" id="${l.id}-min" placeholder="Minutos" min="0" value="${llog.min||''}" oninput="setMin('${l.id}', this.value)">
+    </div>
+    ${nota}
+    ${notaTextarea}
+    <div class="btn-row">
+      <button class="chip" onclick="pausarLivro('${l.id}')">⏸️ Pausar</button>
+      <button class="chip danger" onclick="concluirLivro('${l.id}')">✅ Concluir</button>
+    </div>
+  </div>`;
+}
+
 function renderHoje(){
   const log = getLog();
+  const ativos = DATA.livros.filter(l=>l.ativo);
+  document.getElementById('hojeLivros').innerHTML = ativos.map(l=>renderLivroCardHoje(l, log)).join('');
+  ativos.forEach(l=>updateLivroDisplay(l.id));
   updateTimerDisplays();
-  renderNotaOntem('biblia','bibliaNotaOntem');
-  renderNotaOntem('estoico','estoicoNotaOntem');
-  renderNotaOntem('livro3','livro3NotaOntem');
-  document.getElementById('bibliaNota').value = log.biblia.nota || '';
-  document.getElementById('estoicoNota').value = log.estoico.nota || '';
-  document.getElementById('livro3Nota').value = log.livro3.nota || '';
+}
 
-  // Bíblia — posição no início do dia (antes do que já leu hoje)
-  const startIdx = Math.max(0, DATA.progresso.bibliaIndex - log.biblia.caps);
-  if(startIdx >= BIBLIA_SEQ.length){
-    document.getElementById('bibliaHojeTexto').textContent = 'Ciclo 1 concluído! 🎉';
-  } else {
-    const de = BIBLIA_SEQ[startIdx];
-    const ateIdx = Math.min(DATA.progresso.bibliaIndex-1, BIBLIA_SEQ.length-1);
-    const ate = BIBLIA_SEQ[Math.max(startIdx, ateIdx)];
-    if(log.biblia.caps>0 && (ate.livro!==de.livro || ate.cap!==de.cap)){
-      document.getElementById('bibliaHojeTexto').textContent = `Hoje: ${de.livro} ${de.cap} até ${ate.livro} ${ate.cap}`;
+function updateLivroDisplay(id){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l) return;
+  const log = getLog();
+  const llog = log[id];
+
+  if(l.tipo==='biblia'){
+    const startIdx = Math.max(0, DATA.progresso.bibliaIndex - llog.caps);
+    const hojeEl = document.getElementById(id+'-hoje');
+    if(startIdx >= BIBLIA_SEQ.length){
+      hojeEl.textContent = 'Ciclo concluído! 🎉';
     } else {
-      document.getElementById('bibliaHojeTexto').textContent = `Hoje: ${de.livro} ${de.cap}`;
+      const de = BIBLIA_SEQ[startIdx];
+      const ateIdx = Math.min(DATA.progresso.bibliaIndex-1, BIBLIA_SEQ.length-1);
+      const ate = BIBLIA_SEQ[Math.max(startIdx, ateIdx)];
+      if(llog.caps>0 && (ate.livro!==de.livro || ate.cap!==de.cap)){
+        hojeEl.textContent = `Hoje: ${de.livro} ${de.cap} até ${ate.livro} ${ate.cap}`;
+      } else {
+        hojeEl.textContent = `Hoje: ${de.livro} ${de.cap}`;
+      }
     }
+    document.getElementById(id+'-progresso').textContent = `${DATA.progresso.bibliaIndex} de ${BIBLIA_SEQ.length} capítulos (${Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)}%)`;
+    const metaBiblia = DATA.settings.metaBibliaCaps;
+    document.getElementById(id+'-meta').textContent = llog.caps >= metaBiblia
+      ? `✅ Meta do dia cumprida (meta: ${metaBiblia}/dia)`
+      : `Meta do dia: ${metaBiblia} capítulo(s) — faltam ${metaBiblia - llog.caps}`;
+    return;
   }
-  document.getElementById('bibliaProgressoTexto').textContent = `${DATA.progresso.bibliaIndex} de ${BIBLIA_SEQ.length} capítulos (${Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)}%)`;
-  const metaBiblia = DATA.settings.metaBibliaCaps;
-  document.getElementById('bibliaMetaTexto').textContent = log.biblia.caps >= metaBiblia
-    ? `✅ Meta do dia cumprida (meta: ${metaBiblia}/dia)`
-    : `Meta do dia: ${metaBiblia} capítulo(s) — faltam ${metaBiblia - log.biblia.caps}`;
-  document.getElementById('bibliaCaps').value = log.biblia.caps || 0;
-  document.getElementById('bibliaMin').value = log.biblia.min || '';
 
-  // Estoico
-  const estStart = Math.max(1, DATA.progresso.estoicoDia - log.estoico.caps);
-  const estEnd = Math.max(estStart, DATA.progresso.estoicoDia - 1);
-  if(estStart > ESTOICO_TOTAL_DIAS){
-    document.getElementById('estoicoHojeTexto').textContent = 'Livro concluído! 🎉';
-  } else if(log.estoico.caps>0 && estEnd>estStart){
-    document.getElementById('estoicoHojeTexto').textContent = `Hoje: dias ${estStart} a ${estEnd} de ${ESTOICO_TOTAL_DIAS}`;
-  } else {
-    document.getElementById('estoicoHojeTexto').textContent = `Hoje: dia ${estStart} de ${ESTOICO_TOTAL_DIAS}`;
+  if(l.tipo==='estoico'){
+    const estStart = Math.max(1, DATA.progresso.estoicoDia - llog.caps);
+    const estEnd = Math.max(estStart, DATA.progresso.estoicoDia - 1);
+    const hojeEl = document.getElementById(id+'-hoje');
+    if(estStart > ESTOICO_TOTAL_DIAS){
+      hojeEl.textContent = 'Livro concluído! 🎉';
+    } else if(llog.caps>0 && estEnd>estStart){
+      hojeEl.textContent = `Hoje: dias ${estStart} a ${estEnd} de ${ESTOICO_TOTAL_DIAS}`;
+    } else {
+      hojeEl.textContent = `Hoje: dia ${estStart} de ${ESTOICO_TOTAL_DIAS}`;
+    }
+    document.getElementById(id+'-progresso').textContent = `${DATA.progresso.estoicoDia - 1} de ${ESTOICO_TOTAL_DIAS} dias concluídos`;
+    const metaEstoico = DATA.settings.metaEstoicoDias;
+    document.getElementById(id+'-meta').textContent = llog.caps >= metaEstoico
+      ? `✅ Meta do dia cumprida (meta: ${metaEstoico}/dia)`
+      : `Meta do dia: ${metaEstoico} lição(ões) — faltam ${metaEstoico - llog.caps}`;
+    return;
   }
-  document.getElementById('estoicoProgressoTexto').textContent = `${DATA.progresso.estoicoDia - 1} de ${ESTOICO_TOTAL_DIAS} dias concluídos`;
-  const metaEstoico = DATA.settings.metaEstoicoDias;
-  document.getElementById('estoicoMetaTexto').textContent = log.estoico.caps >= metaEstoico
-    ? `✅ Meta do dia cumprida (meta: ${metaEstoico}/dia)`
-    : `Meta do dia: ${metaEstoico} lição(ões) — faltam ${metaEstoico - log.estoico.caps}`;
-  document.getElementById('estoicoCaps').value = log.estoico.caps || 0;
-  document.getElementById('estoicoMin').value = log.estoico.min || '';
 
-  // Livro 3
-  const titulo = DATA.settings.livro3Titulo;
-  document.getElementById('livro3Titulo').textContent = titulo || 'Nenhum livro definido';
-  document.getElementById('livro3SemTitulo').style.display = titulo ? 'none' : 'block';
-  const lidoPag = DATA.progresso.livro3Paginas;
-  const lidoCaps = DATA.progresso.livro3Caps;
-  const totalPag = DATA.settings.livro3TotalPaginas;
-  const totalCaps = DATA.settings.livro3TotalCapitulos;
-  if(titulo && totalPag){
+  // genérico
+  const totalPag = l.totalPaginas;
+  const totalCaps = l.totalCapitulos;
+  const lidoPag = l.paginasLidas||0;
+  const lidoCaps = l.capsLidas||0;
+  const progEl = document.getElementById(id+'-progresso');
+  const barEl = document.getElementById(id+'-bar');
+  const fillEl = document.getElementById(id+'-fill');
+  const capsEl = document.getElementById(id+'-capsprogresso');
+  if(totalPag){
     const pct = Math.min(100, Math.round(lidoPag/totalPag*100));
-    document.getElementById('livro3ProgressBar').style.display = 'block';
-    document.getElementById('livro3ProgressFill').style.width = pct+'%';
-    document.getElementById('livro3ProgressoTexto').textContent = `${lidoPag} de ${totalPag} páginas (${pct}%)`;
+    barEl.style.display = 'block';
+    fillEl.style.width = pct+'%';
+    progEl.textContent = `${lidoPag} de ${totalPag} páginas (${pct}%)`;
   } else {
-    document.getElementById('livro3ProgressBar').style.display = 'none';
-    document.getElementById('livro3ProgressoTexto').textContent = titulo ? `Total lido até agora: ${lidoPag} páginas` : '';
+    barEl.style.display = 'none';
+    progEl.textContent = `Total lido até agora: ${lidoPag} páginas`;
   }
-  if(titulo && totalCaps){
+  if(totalCaps){
     const pctCaps = Math.min(100, Math.round(lidoCaps/totalCaps*100));
-    document.getElementById('livro3CapsProgressoTexto').textContent = `${lidoCaps} de ${totalCaps} capítulos (${pctCaps}%)`;
+    capsEl.textContent = `${lidoCaps} de ${totalCaps} capítulos (${pctCaps}%)`;
   } else {
-    document.getElementById('livro3CapsProgressoTexto').textContent = '';
+    capsEl.textContent = '';
   }
-  document.getElementById('livro3Paginas').value = log.livro3.paginas || '';
-  document.getElementById('livro3Caps').value = log.livro3.caps || '';
-  document.getElementById('livro3Min').value = log.livro3.min || '';
 }
 
-function setMin(tipo, val){
+function setMin(id, val){
   const log = getLog();
-  log[tipo].min = val ? parseInt(val) : 0;
+  log[id].min = val ? parseInt(val) : 0;
   saveData();
 }
 
-function setNota(tipo, val){
+function setNota(id, val){
   const log = getLog();
-  log[tipo].nota = val;
+  log[id].nota = val;
   saveData();
 }
 
-function yesterdayKey(){
-  const d = new Date();
-  d.setDate(d.getDate()-1);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-function setCapsLidos(tipo, val){
+function setCapsLidos(id, val){
   const log = getLog();
   const novo = Math.max(0, val ? parseInt(val) : 0);
-  const delta = novo - log[tipo].caps;
-  log[tipo].caps = novo;
-  if(tipo==='biblia'){
+  const delta = novo - (log[id].caps||0);
+  log[id].caps = novo;
+  const l = DATA.livros.find(x=>x.id===id);
+  if(l.tipo==='biblia'){
     DATA.progresso.bibliaIndex = Math.max(0, Math.min(BIBLIA_SEQ.length, DATA.progresso.bibliaIndex + delta));
-  } else if(tipo==='estoico'){
+  } else if(l.tipo==='estoico'){
     DATA.progresso.estoicoDia = Math.max(1, Math.min(ESTOICO_TOTAL_DIAS+1, DATA.progresso.estoicoDia + delta));
+  } else {
+    l.capsLidas = Math.max(0, (l.capsLidas||0) + delta);
   }
-  saveData(); renderHoje();
+  saveData();
+  updateLivroDisplay(id);
+}
+
+function setPaginas(id, val){
+  const log = getLog();
+  const novo = Math.max(0, val ? parseInt(val) : 0);
+  const delta = novo - (log[id].paginas||0);
+  log[id].paginas = novo;
+  const l = DATA.livros.find(x=>x.id===id);
+  l.paginasLidas = Math.max(0, (l.paginasLidas||0) + delta);
+  saveData();
+  updateLivroDisplay(id);
 }
 
 function setMeta(field, val){
@@ -463,52 +525,100 @@ function setMeta(field, val){
   saveData(); renderHoje();
 }
 
-function setLivro3(field, val){
-  const log = getLog();
-  const novo = Math.max(0, val ? parseInt(val) : 0);
-  if(field==='paginas' || field==='caps'){
-    const delta = novo - (log.livro3[field]||0);
-    log.livro3[field] = novo;
-    const acumKey = field==='paginas' ? 'livro3Paginas' : 'livro3Caps';
-    DATA.progresso[acumKey] = Math.max(0, DATA.progresso[acumKey] + delta);
-  } else {
-    log.livro3[field] = novo;
-  }
-  saveData(); renderHoje();
+/* ====================== GESTÃO DE LIVROS ====================== */
+function renomearLivro(id){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l) return;
+  const novo = prompt('Novo nome do livro:', l.nome);
+  if(novo===null) return;
+  const trimmed = novo.trim();
+  if(!trimmed) return;
+  l.nome = trimmed;
+  saveData(); renderHoje(); renderPlanos();
 }
 
-function setLivro3Titulo(val){
-  DATA.settings.livro3Titulo = val;
-  saveData(); renderHoje();
-}
-
-function setLivro3Config(field, val){
-  DATA.settings[field] = val ? parseInt(val) : null;
-  saveData(); renderHoje();
-}
-
-function concluirLivro3(){
-  if(!DATA.settings.livro3Titulo){ alert('Defina o título do livro primeiro.'); return; }
-  if(!confirm(`Marcar "${DATA.settings.livro3Titulo}" como concluído e começar um novo livro?`)) return;
-  DATA.livrosConcluidos.push({
-    titulo: DATA.settings.livro3Titulo,
-    paginas: DATA.progresso.livro3Paginas,
-    dataConclusao: todayKey()
+function adicionarLivro(){
+  const nome = prompt('Nome do livro:');
+  if(!nome || !nome.trim()) return;
+  const totalPagStr = prompt('Total de páginas (opcional, deixe vazio se não souber):');
+  const totalCapStr = prompt('Total de capítulos (opcional):');
+  const id = 'g'+Date.now();
+  DATA.livros.push({
+    id, tipo:'generico', nome:nome.trim(), ativo:true,
+    totalPaginas: totalPagStr ? (parseInt(totalPagStr)||null) : null,
+    totalCapitulos: totalCapStr ? (parseInt(totalCapStr)||null) : null,
+    paginasLidas:0, capsLidas:0
   });
-  DATA.settings.livro3Titulo = '';
-  DATA.settings.livro3TotalPaginas = null;
-  DATA.settings.livro3TotalCapitulos = null;
-  DATA.progresso.livro3Paginas = 0;
-  DATA.progresso.livro3Caps = 0;
+  saveData(); renderHoje(); renderPlanos();
+}
+
+function pausarLivro(id){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l) return;
+  l.ativo = false;
+  saveData(); renderHoje(); renderPlanos();
+}
+
+function retomarLivro(id){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l) return;
+  l.ativo = true;
+  saveData(); renderHoje(); renderPlanos();
+}
+
+function concluirLivro(id){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l || l.tipo!=='generico') return;
+  if(!confirm(`Marcar "${l.nome}" como concluído?`)) return;
+  DATA.livrosConcluidos.push({ titulo:l.nome, paginas:l.paginasLidas||0, dataConclusao: todayKey() });
+  DATA.livros = DATA.livros.filter(x=>x.id!==id);
   saveData(); renderHoje(); renderPlanos(); renderLivrosConcluidos();
+}
+
+function removerLivro(id){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l) return;
+  if(!confirm(`Remover "${l.nome}" da lista (sem marcar como concluído)?`)) return;
+  DATA.livros = DATA.livros.filter(x=>x.id!==id);
+  saveData(); renderHoje(); renderPlanos();
+}
+
+function setLivroConfig(id, field, val){
+  const l = DATA.livros.find(x=>x.id===id);
+  if(!l) return;
+  l[field] = val ? parseInt(val) : null;
+  saveData(); renderHoje();
 }
 
 /* ====================== PROGRESSO ====================== */
 let chartMin = null;
+function renderProgressoLivros(){
+  let h='';
+  DATA.livros.filter(l=>l.ativo).forEach(l=>{
+    let pct=null;
+    if(l.tipo==='biblia'){
+      pct = Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100);
+    } else if(l.tipo==='estoico'){
+      pct = Math.round((DATA.progresso.estoicoDia-1)/ESTOICO_TOTAL_DIAS*100);
+    } else if(l.totalPaginas){
+      pct = Math.min(100, Math.round((l.paginasLidas||0)/l.totalPaginas*100));
+    } else if(l.totalCapitulos){
+      pct = Math.min(100, Math.round((l.capsLidas||0)/l.totalCapitulos*100));
+    }
+    h += `<div style="margin-bottom:10px;">
+      <div class="progress-label"><span>${escapeHtml(l.nome)}</span><span>${pct!=null ? pct+'%' : 'sem meta definida'}</span></div>
+      <div class="progress"><div style="width:${pct!=null?pct:0}%;"></div></div>
+    </div>`;
+  });
+  document.getElementById('progressoLivros').innerHTML = h || '<p class="muted">Nenhum livro ativo.</p>';
+}
+
 function renderProgresso(){
   document.getElementById('statBiblia').textContent = Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)+'%';
-  document.getElementById('statEstoico').textContent = `${DATA.progresso.estoicoDia-1}/${ESTOICO_TOTAL_DIAS}`;
-  document.getElementById('statLivro3').textContent = DATA.progresso.livro3Paginas;
+  const totalPaginasLidas = DATA.livros.filter(l=>l.tipo==='generico').reduce((s,l)=>s+(l.paginasLidas||0),0);
+  document.getElementById('statLivro3').textContent = totalPaginasLidas;
+  document.getElementById('statLivrosAtivos').textContent = DATA.livros.filter(l=>l.ativo).length;
+  renderProgressoLivros();
   renderLivrosConcluidos();
 
   // streak
@@ -518,7 +628,7 @@ function renderProgresso(){
     d.setDate(d.getDate()-i);
     const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const log = DATA.logs[key];
-    const leu = log && ((log.biblia.caps>0) || (log.estoico.caps>0) || (log.livro3 && (log.livro3.paginas>0 || log.livro3.min>0)));
+    const leu = log && Object.values(log).some(b=> (b.caps>0) || (b.paginas>0) || (b.min>0));
     if(leu) streak++;
     else if(i>0) break;
     else if(i===0 && !leu) continue;
@@ -533,7 +643,7 @@ function renderProgresso(){
     const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     labels.push(d.toLocaleDateString('pt-BR',{weekday:'short'}));
     const log = DATA.logs[key];
-    const min = log ? (log.biblia.min||0) + (log.estoico.min||0) + (log.livro3?log.livro3.min||0:0) : 0;
+    const min = log ? Object.values(log).reduce((s,b)=>s+(b.min||0),0) : 0;
     data.push(min);
   }
   const ctx = document.getElementById('chartMin');
@@ -556,9 +666,36 @@ function renderPlanos(){
   });
   document.getElementById('bibliaOrdemLista').innerHTML = h
     + `<p class="muted" style="margin-top:8px;">Progresso atual: capítulo ${idx} de ${BIBLIA_SEQ.length} do ciclo.</p>`;
-  document.getElementById('livro3TituloInput').value = DATA.settings.livro3Titulo || '';
-  document.getElementById('livro3TotalPaginasInput').value = DATA.settings.livro3TotalPaginas || '';
-  document.getElementById('livro3TotalCapsInput').value = DATA.settings.livro3TotalCapitulos || '';
+
+  const generos = DATA.livros.filter(l=>l.tipo==='generico');
+  let g='';
+  if(!generos.length){
+    g = '<p class="muted">Nenhum livro adicional. Use "➕ Adicionar livro" na aba Hoje.</p>';
+  } else {
+    generos.forEach(l=>{
+      g += `<div class="livro-item${l.ativo?' current':''}">
+        <strong>${escapeHtml(l.nome)}</strong> ${l.ativo?'(ativo)':'(pausado)'}
+        <div class="row" style="margin-top:6px;">
+          <div>
+            <label>Total de páginas</label>
+            <input type="number" min="0" value="${l.totalPaginas||''}" placeholder="Ex: 240" oninput="setLivroConfig('${l.id}','totalPaginas',this.value)">
+          </div>
+          <div>
+            <label>Total de capítulos</label>
+            <input type="number" min="0" value="${l.totalCapitulos||''}" placeholder="Ex: 12" oninput="setLivroConfig('${l.id}','totalCapitulos',this.value)">
+          </div>
+        </div>
+        <div class="btn-row">
+          ${l.ativo
+            ? `<button class="chip" onclick="pausarLivro('${l.id}')">⏸️ Pausar</button>`
+            : `<button class="chip primary" onclick="retomarLivro('${l.id}')">▶️ Retomar</button>`}
+          <button class="chip danger" onclick="concluirLivro('${l.id}')">✅ Concluir</button>
+          <button class="chip danger" onclick="removerLivro('${l.id}')">🗑️ Remover</button>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('outrosLivrosList').innerHTML = g;
 }
 
 /* ====================== LIVROS CONCLUÍDOS ====================== */
@@ -566,7 +703,7 @@ function renderLivrosConcluidos(){
   const el = document.getElementById('livrosConcluidosList');
   const lista = DATA.livrosConcluidos || [];
   if(!lista.length){ el.innerHTML = '<p class="muted">Nenhum livro concluído ainda.</p>'; return; }
-  el.innerHTML = lista.map(l=>`<div class="livro-item done"><strong>${l.titulo}</strong> — ${l.paginas} páginas · concluído em ${l.dataConclusao.slice(8,10)}/${l.dataConclusao.slice(5,7)}/${l.dataConclusao.slice(0,4)}</div>`).join('');
+  el.innerHTML = lista.map(l=>`<div class="livro-item done"><strong>${escapeHtml(l.titulo)}</strong> — ${l.paginas} páginas · concluído em ${l.dataConclusao.slice(8,10)}/${l.dataConclusao.slice(5,7)}/${l.dataConclusao.slice(0,4)}</div>`).join('');
 }
 
 /* ====================== INIT ====================== */
