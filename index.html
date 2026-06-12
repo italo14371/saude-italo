@@ -124,6 +124,11 @@
     </div>
 
     <div class="card">
+      <h2>🕐 Jejum de hoje</h2>
+      <div id="jejumArea"></div>
+    </div>
+
+    <div class="card">
       <h2>🍽️ Refeições de hoje</h2>
       <div id="mealsArea"></div>
       <div class="muted" id="mealsTotal" style="margin-top:8px; font-size:13px;"></div>
@@ -259,6 +264,11 @@
 /* ====================== PLANO (referência fixa) ====================== */
 const PLAN = {
   metas: { agua: 3500, kcal: 1950, prot: 170 },
+  jejum: [
+    { id:'normal', nome:'Jejum até 8h-9h', desc:'Jejum noturno normal — café da manhã leve a partir das 8h-9h' },
+    { id:'estendido', nome:'Jejum até o almoço', desc:'Jejum estendido — pula o café da manhã, primeira refeição é o almoço' },
+    { id:'nenhum', nome:'Sem jejum hoje', desc:'Café da manhã normal' }
+  ],
   grade: [
     { dia:'Domingo', tipo:'descanso', desc:'Descanso (opcional: Treino Casa - Plano B)' },
     { dia:'Segunda', tipo:'treinoA', desc:'Treino A — Academia' },
@@ -352,7 +362,7 @@ function todayKey(){
 }
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, kcal:null, notes:'' };
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, kcal:null, jejum:'', notes:'' };
   return DATA.logs[dateKey];
 }
 
@@ -530,6 +540,21 @@ function setCorridaField(field, val){
 }
 
 /* ====================== HOJE: REFEIÇÕES ====================== */
+function renderJejum(){
+  const log = getLog();
+  let h='';
+  PLAN.jejum.forEach(opt=>{
+    const sel = log.jejum===opt.id;
+    h += `<button class="opt ${sel?'selected':''}" onclick="setJejum('${opt.id}')">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.desc}</span></button>`;
+  });
+  document.getElementById('jejumArea').innerHTML = h;
+}
+function setJejum(id){
+  const log = getLog();
+  log.jejum = (log.jejum===id) ? '' : id;
+  saveData(); renderJejum();
+}
+
 function renderMeals(){
   const log = getLog();
   log.meals = log.meals || {};
@@ -770,6 +795,7 @@ function initToday(){
   renderAgua();
   renderPeso();
   renderWorkoutArea();
+  renderJejum();
   renderMeals();
   renderNotes();
   const metaEl = document.getElementById('metaPesoStat');
