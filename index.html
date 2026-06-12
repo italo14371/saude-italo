@@ -77,7 +77,18 @@
   .slot-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
   .slot-row button{flex:none; background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; width:30px; height:30px; font-size:14px;}
   .slot-edit{margin-top:8px; padding-top:8px; border-top:1px solid var(--border);}
-  .meal-total{margin-top:8px; padding-top:6px; border-top:1px dashed var(--border); font-size:12px; color:var(--muted); text-align:right;}
+  .meal-total{margin-top:8px; padding-top:6px; border-top:1px dashed var(--border); font-size:12px; color:var(--muted); text-align:right; line-height:1.5;}
+  .meal-total strong{color:var(--text); font-size:14px;}
+
+  .daily-total{border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--card2); text-align:center;}
+  .daily-total .dt-kcal{font-size:28px; font-weight:700;}
+  .daily-total .dt-meta{font-size:14px; font-weight:400; color:var(--muted);}
+  .daily-total .dt-bar{height:8px; border-radius:4px; background:var(--border); margin:8px 0; overflow:hidden;}
+  .daily-total .dt-bar-fill{height:100%; background:var(--accent); border-radius:4px;}
+  .daily-total .dt-status{font-size:13px; font-weight:600; color:var(--accent);}
+  .daily-total.over .dt-bar-fill{background:var(--danger);}
+  .daily-total.over .dt-status{color:var(--danger);}
+  .daily-total .dt-macros{font-size:12px; color:var(--muted); margin-top:6px;}
   .exercise.selected{border-color:var(--accent); background:rgba(74,222,128,.08);}
 
   nav.bottom{position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; padding:6px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
@@ -178,10 +189,8 @@
     <div class="card">
       <h2>🍽️ Refeições de hoje</h2>
       <datalist id="foodList"></datalist>
+      <div id="mealsTotal" style="margin-bottom:10px;"></div>
       <div id="mealsArea"></div>
-      <div class="muted" id="mealsTotal" style="margin-top:8px; font-size:13px;"></div>
-      <h3>Calorias estimadas no dia (opcional, se comeu algo fora do cardápio)</h3>
-      <input type="number" id="kcalInput" placeholder="Ex: 1950" oninput="setKcal(this.value)">
     </div>
 
     <div class="card">
@@ -391,33 +400,41 @@ const PLAN = {
     { nome:'Superman leve', desc:'2-3 séries x 10-12 reps' },
     { nome:'Alongamento final', desc:'Postura da criança, alongamento de isquiotibiais, rotação de pescoço, alongamento de trapézio' }
   ],
-  cardapio: {
+  // cada refeição é uma lista de slots (componentes); slots com 'food'+'gramas' são ajustáveis por peso,
+  // slots sem 'food' têm macros fixos (combo pronto)
+  cardapioSlots: {
     'Manhã (jejum ou leve)': [
-      { nome:'Jejum (só água/café/chá sem açúcar)', kcal:0, prot:0, carb:0, gord:0 },
-      { nome:'Iogurte natural integral', kcal:100, prot:6, carb:8, gord:5 },
-      { nome:'1 ovo cozido', kcal:75, prot:6, carb:1, gord:5 },
-      { nome:'Café + whey', kcal:110, prot:24, carb:2, gord:1 }
+      { id:'opcao', nome:'Manhã', options:[
+        { nome:'Jejum (só água/café/chá sem açúcar)', kcal:0, prot:0, carb:0, gord:0 },
+        { nome:'Iogurte natural integral', kcal:100, prot:6, carb:8, gord:5 },
+        { nome:'1 ovo cozido', kcal:75, prot:6, carb:1, gord:5 },
+        { nome:'Café + whey', kcal:110, prot:24, carb:2, gord:1 }
+      ]}
     ],
     'Café da tarde': [
-      { nome:'Banana + aveia + pasta de amendoim', kcal:310, prot:9, carb:42, gord:11 },
-      { nome:'Iogurte natural + morango congelado + 1/2 dose whey', kcal:230, prot:22, carb:18, gord:6 },
-      { nome:'Pão + queijo coalho/ricota + ovo cozido', kcal:330, prot:19, carb:35, gord:12 },
-      { nome:'Iogurte natural + aveia + pasta de amendoim', kcal:250, prot:12, carb:22, gord:12 }
+      { id:'opcao', nome:'Café da tarde', options:[
+        { nome:'Banana + aveia + pasta de amendoim', kcal:310, prot:9, carb:42, gord:11 },
+        { nome:'Iogurte natural + morango congelado + 1/2 dose whey', kcal:230, prot:22, carb:18, gord:6 },
+        { nome:'Pão + queijo coalho/ricota + ovo cozido', kcal:330, prot:19, carb:35, gord:12 },
+        { nome:'Iogurte natural + aveia + pasta de amendoim', kcal:250, prot:12, carb:22, gord:12 }
+      ]}
     ],
     'Janta': [
-      { nome:'Omelete 2-3 ovos + queijo + legumes', kcal:340, prot:25, carb:5, gord:24 },
-      { nome:'Frango desfiado + salada + batata doce 100g', kcal:280, prot:28, carb:22, gord:6 },
-      { nome:'Iogurte natural + 2 ovos cozidos', kcal:250, prot:22, carb:8, gord:14 },
-      { nome:'Pão + queijo coalho + ovo cozido', kcal:220, prot:14, carb:16, gord:11 }
+      { id:'opcao', nome:'Janta', options:[
+        { nome:'Omelete 2-3 ovos + queijo + legumes', kcal:340, prot:25, carb:5, gord:24 },
+        { nome:'Frango desfiado + salada + batata doce 100g', kcal:280, prot:28, carb:22, gord:6 },
+        { nome:'Iogurte natural + 2 ovos cozidos', kcal:250, prot:22, carb:8, gord:14 },
+        { nome:'Pão + queijo coalho + ovo cozido', kcal:220, prot:14, carb:16, gord:11 }
+      ]}
     ],
     'Lanche da noite (se fome forte)': [
-      { nome:'Iogurte natural + whey', kcal:250, prot:28, carb:14, gord:6 },
-      { nome:'Whey + água', kcal:120, prot:24, carb:3, gord:1 },
-      { nome:'Ovo cozido + queijo coalho', kcal:145, prot:12, carb:1, gord:10 }
-    ]
-  },
-  // Almoço: itens separados por componente (proteína/carbo/salada), cada um com gramatura padrão editável
-  cardapioSlots: {
+      { id:'opcao', nome:'Lanche da noite', options:[
+        { nome:'Iogurte natural + whey', kcal:250, prot:28, carb:14, gord:6 },
+        { nome:'Whey + água', kcal:120, prot:24, carb:3, gord:1 },
+        { nome:'Ovo cozido + queijo coalho', kcal:145, prot:12, carb:1, gord:10 }
+      ]}
+    ],
+    // Almoço: itens separados por componente (proteína/carbo/salada), cada um com gramatura padrão editável
     'Almoço': [
       { id:'proteina', nome:'Proteína', options:[
         { nome:'Frango grelhado', food:'Frango (peito) grelhado', gramas:150 },
@@ -506,9 +523,10 @@ function todayKeyOf(d){
 }
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, kcal:null, jejum:'', jejumFim:'', suplementos:{}, notes:'' };
+  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, mealsExtra:{}, kcal:null, jejum:'', jejumFim:'', suplementos:{}, notes:'' };
   if(!DATA.logs[dateKey].sono) DATA.logs[dateKey].sono = {dormiu:'',acordou:'',qualidade:''};
   if(!DATA.logs[dateKey].cardapioSel) DATA.logs[dateKey].cardapioSel = {};
+  if(!DATA.logs[dateKey].mealsExtra) DATA.logs[dateKey].mealsExtra = {};
   if(!DATA.logs[dateKey].suplementos) DATA.logs[dateKey].suplementos = {};
   return DATA.logs[dateKey];
 }
@@ -770,7 +788,9 @@ function renderFoodDatalist(){
   document.getElementById('foodList').innerHTML = allFoods().map(f=>`<option value="${f.nome}">`).join('');
 }
 function slotMacros(opt, gramas){
-  if(!opt.food) return {kcal:0,prot:0,carb:0,gord:0};
+  if(!opt.food){
+    return { kcal: opt.kcal||0, prot: opt.prot||0, carb: opt.carb||0, gord: opt.gord||0 };
+  }
   const food = allFoods().find(f=>f.nome===opt.food);
   if(!food) return {kcal:0,prot:0,carb:0,gord:0};
   const fator = gramas/100;
@@ -810,7 +830,7 @@ function renderMealSlots(meal){
     h += `<div class="slot">
       <div class="slot-row">
         <div class="slot-info"><strong>${slot.nome}:</strong> ${opt.nome}${opt.food ? ` — ${sel.pesoLivre?'porção livre':sel.gramas+'g'}` : ''}
-          ${opt.food && !sel.pesoLivre ? `<div class="fi-macros">${macros.kcal} kcal · P${macros.prot} C${macros.carb} G${macros.gord}</div>` : ''}
+          ${!sel.pesoLivre ? `<div class="fi-macros">🔥 ${macros.kcal} kcal · Proteína ${macros.prot}g · Carboidrato ${macros.carb}g · Gordura ${macros.gord}g</div>` : ''}
         </div>
         <button onclick="toggleSlotEdit('${editId}')">✏️</button>
       </div>
@@ -850,31 +870,23 @@ function setSlotPesoLivre(meal, slotId, checked){
 function renderMeals(){
   const log = getLog();
   log.meals = log.meals || {};
+  log.mealsExtra = log.mealsExtra || {};
   let h='';
   let totalKcal=0, totalProt=0, totalCarb=0, totalGord=0;
   MEAL_ORDER.forEach(meal=>{
     h += `<div class="meal"><div class="meal-title">${meal}</div>`;
     let mealKcal=0, mealProt=0, mealCarb=0, mealGord=0;
 
-    if(PLAN.cardapioSlots[meal]){
-      const r = renderMealSlots(meal);
-      h += r.html;
-      mealKcal+=r.kcal; mealProt+=r.prot; mealCarb+=r.carb; mealGord+=r.gord;
-    } else {
-      PLAN.cardapio[meal].forEach(opt=>{
-        const sel = log.meals[meal]===opt.nome;
-        if(sel){ mealKcal+=opt.kcal; mealProt+=opt.prot; mealCarb+=opt.carb; mealGord+=opt.gord; }
-        h += `<button class="opt ${sel?'selected':''}" onclick="setMeal('${meal}', \`${opt.nome.replace(/'/g,"\\'")}\`)">${opt.nome}<br><span class="muted" style="font-size:11px;">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></button>`;
-      });
-      h += `<input type="text" placeholder="Outro / detalhe..." value="${log.meals[meal+'_outro']||''}" oninput="setMealOutro('${meal}',this.value)" style="margin-top:4px;">`;
-    }
+    const r = renderMealSlots(meal);
+    h += r.html;
+    mealKcal+=r.kcal; mealProt+=r.prot; mealCarb+=r.carb; mealGord+=r.gord;
 
     const items = log.meals[meal+'_items'] || [];
     if(items.length){
       h += `<div style="margin-top:8px;">`;
       items.forEach((it,idx)=>{
         mealKcal+=it.kcal; mealProt+=it.prot; mealCarb+=it.carb; mealGord+=it.gord;
-        h += `<div class="food-item"><div class="fi-info">${it.nome} — ${it.gramas}g<div class="fi-macros">${it.kcal} kcal · P${it.prot} C${it.carb} G${it.gord}</div></div><button class="fi-del" onclick="removeFoodItem('${meal}', ${idx})">✕</button></div>`;
+        h += `<div class="food-item"><div class="fi-info">${it.nome} — ${it.gramas}g<div class="fi-macros">${it.kcal} kcal · Proteína ${it.prot}g · Carboidrato ${it.carb}g · Gordura ${it.gord}g</div></div><button class="fi-del" onclick="removeFoodItem('${meal}', ${idx})">✕</button></div>`;
       });
       h += `</div>`;
     }
@@ -885,14 +897,38 @@ function renderMeals(){
       <button onclick="addFoodItem('${meal.replace(/'/g,"\\'")}')">+</button>
     </div>`;
 
-    h += `<div class="meal-total">Total: <strong>${Math.round(mealKcal)} kcal</strong> · P${mealProt.toFixed(1)} C${mealCarb.toFixed(1)} G${mealGord.toFixed(1)}</div>`;
+    const extra = log.mealsExtra[meal] || 0;
+    mealKcal += extra;
+    h += `<div class="row" style="margin-top:6px; align-items:center;">
+      <div style="flex:2;"><label style="margin:0;">Calorias extras (fora do cardápio)</label></div>
+      <div style="flex:1;"><input type="number" value="${extra||''}" placeholder="0" onchange="setMealExtra('${meal.replace(/'/g,"\\'")}', this.value)"></div>
+    </div>`;
+
+    h += `<div class="meal-total">🔥 <strong>${Math.round(mealKcal)} kcal</strong><br>Proteína ${mealProt.toFixed(1)}g · Carboidrato ${mealCarb.toFixed(1)}g · Gordura ${mealGord.toFixed(1)}g</div>`;
 
     totalKcal+=mealKcal; totalProt+=mealProt; totalCarb+=mealCarb; totalGord+=mealGord;
     h += `</div>`;
   });
   document.getElementById('mealsArea').innerHTML = h;
-  document.getElementById('kcalInput').value = log.kcal ?? '';
-  document.getElementById('mealsTotal').innerHTML = `Total do dia: <strong>${Math.round(totalKcal)} kcal</strong> · Proteína ${totalProt.toFixed(1)}g · Carbo ${totalCarb.toFixed(1)}g · Gordura ${totalGord.toFixed(1)}g <span class="muted">(meta: ~${PLAN.metas.kcal} kcal / ~${PLAN.metas.prot}g proteína)</span>`;
+
+  const pct = Math.round(totalKcal / PLAN.metas.kcal * 100);
+  const diff = Math.round(totalKcal - PLAN.metas.kcal);
+  let statusClass = 'ok', statusText = `Faltam ${Math.abs(diff)} kcal para a meta`;
+  if(diff > 0){ statusClass = 'over'; statusText = `${diff} kcal acima da meta`; }
+  else if(diff === 0){ statusText = 'Meta batida em cheio!'; }
+  document.getElementById('mealsTotal').innerHTML = `
+    <div class="daily-total ${statusClass}">
+      <div class="dt-kcal">🔥 ${Math.round(totalKcal)} <span class="dt-meta">/ ${PLAN.metas.kcal} kcal</span></div>
+      <div class="dt-bar"><div class="dt-bar-fill" style="width:${Math.min(100,pct)}%"></div></div>
+      <div class="dt-status">${statusText}</div>
+      <div class="dt-macros">Proteína ${totalProt.toFixed(1)}g <span class="muted">(meta ~${PLAN.metas.prot}g)</span> · Carboidrato ${totalCarb.toFixed(1)}g · Gordura ${totalGord.toFixed(1)}g</div>
+    </div>`;
+}
+function setMealExtra(meal, val){
+  const log = getLog();
+  log.mealsExtra = log.mealsExtra || {};
+  log.mealsExtra[meal] = Math.max(0, parseFloat(val)||0);
+  saveData(); renderMeals();
 }
 function addFoodItem(meal){
   const nomeInput = document.getElementById(`foodInput-${meal}`);
@@ -947,21 +983,6 @@ function renderCustomFoods(){
     <div class="food-card"><div class="fc-row"><strong>${f.nome}</strong><button class="fi-del" onclick="deleteCustomFood('${f.id}')">✕</button></div>
     <div class="fc-macros">${f.kcal} kcal · P${f.prot} C${f.carb} G${f.gord} (por 100g)</div></div>`).join('');
 }
-function setMeal(meal, opt){
-  const log = getLog();
-  log.meals[meal] = (log.meals[meal]===opt) ? '' : opt;
-  saveData(); renderMeals();
-}
-function setMealOutro(meal, val){
-  const log = getLog();
-  log.meals[meal+'_outro'] = val;
-  saveData();
-}
-function setKcal(v){
-  const log = getLog();
-  log.kcal = v ? parseInt(v) : null;
-  saveData();
-}
 function setNotes(v){
   const log = getLog();
   log.notes = v;
@@ -997,18 +1018,14 @@ function renderCardapioRef(){
   let h='';
   MEAL_ORDER.forEach(meal=>{
     h += `<h3>${meal}</h3><ul style="font-size:13px; line-height:1.6; padding-left:20px; margin:0 0 8px;">`;
-    if(PLAN.cardapioSlots[meal]){
-      PLAN.cardapioSlots[meal].forEach(slot=>{
-        const opts = slot.options.map(o=>{
-          if(!o.food) return o.nome;
-          const m = slotMacros(o, o.gramas);
-          return `${o.nome} (${o.gramas}g — ${m.kcal} kcal · P${m.prot} C${m.carb} G${m.gord})`;
-        }).join(' / ');
-        h += `<li><strong>${slot.nome}:</strong> ${opts}</li>`;
-      });
-    } else {
-      PLAN.cardapio[meal].forEach(opt=> h += `<li>${opt.nome} — <span class="muted">${opt.kcal} kcal · P${opt.prot} C${opt.carb} G${opt.gord}</span></li>`);
-    }
+    PLAN.cardapioSlots[meal].forEach(slot=>{
+      const opts = slot.options.map(o=>{
+        const m = slotMacros(o, o.gramas);
+        const gramaTxt = o.food ? ` (${o.gramas}g)` : '';
+        return `${o.nome}${gramaTxt} — ${m.kcal} kcal · P${m.prot} C${m.carb} G${m.gord}`;
+      }).join(' / ');
+      h += `<li><strong>${slot.nome}:</strong> ${opts}</li>`;
+    });
     h += `</ul>`;
   });
   h += `<p class="muted" style="margin-top:8px;">Meta diária: ~${PLAN.metas.kcal} kcal · ~${PLAN.metas.prot}g proteína. Escolha uma opção por refeição — o app soma o total automaticamente na aba Hoje.</p>`;
@@ -1175,22 +1192,16 @@ function renderPainel(){
 
 /* ====================== COMPARADOR SEMANA/MES ====================== */
 function dailyKcalTotal(log){
-  if(log.kcal!=null) return log.kcal;
   let total=0, has=false;
   MEAL_ORDER.forEach(meal=>{
-    if(PLAN.cardapioSlots[meal]){
-      const r = computeMealSlotsTotal(meal, log);
-      if(r.kcal>0){ total+=r.kcal; has=true; }
-    } else {
-      const sel = log.meals && log.meals[meal];
-      if(sel){
-        const opt = PLAN.cardapio[meal].find(o=>o.nome===sel);
-        if(opt){ total+=opt.kcal; has=true; }
-      }
-    }
+    const r = computeMealSlotsTotal(meal, log);
+    if(r.kcal>0){ total+=r.kcal; has=true; }
     const items = log.meals && log.meals[meal+'_items'];
     if(items && items.length){ items.forEach(it=>total+=it.kcal); has=true; }
+    const extra = log.mealsExtra && log.mealsExtra[meal];
+    if(extra){ total+=extra; has=true; }
   });
+  if(log.kcal!=null){ total+=log.kcal; has=true; }
   return has ? total : null;
 }
 function computeStats(dates){
