@@ -80,6 +80,10 @@
       <div class="leitura-hoje" id="bibliaHojeTexto"></div>
       <div class="muted" id="bibliaProgressoTexto" style="margin-bottom:8px;"></div>
       <div class="muted" id="bibliaMetaTexto" style="margin-bottom:8px;"></div>
+      <div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
+        <button class="chip primary" id="bibliaTimerBtn" onclick="toggleTimer('biblia')"></button>
+        <span class="muted" id="bibliaTimer"></span>
+      </div>
       <div class="row">
         <div>
           <label>Capítulos lidos hoje</label>
@@ -100,6 +104,10 @@
       <div class="leitura-hoje" id="estoicoHojeTexto"></div>
       <div class="muted" id="estoicoProgressoTexto" style="margin-bottom:8px;"></div>
       <div class="muted" id="estoicoMetaTexto" style="margin-bottom:8px;"></div>
+      <div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
+        <button class="chip primary" id="estoicoTimerBtn" onclick="toggleTimer('estoico')"></button>
+        <span class="muted" id="estoicoTimer"></span>
+      </div>
       <div class="row">
         <div>
           <label>Dias/lições lidas hoje</label>
@@ -118,9 +126,16 @@
     <div class="card">
       <h2>💼 Livro 3 (trabalho/vendas)</h2>
       <div class="leitura-hoje" id="livro3Titulo"></div>
-      <div class="muted" id="livro3ProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="muted" id="livro3ProgressoTexto" style="margin-bottom:4px;"></div>
+      <div class="progress" id="livro3ProgressBar" style="display:none; margin-bottom:8px;"><div id="livro3ProgressFill" style="width:0%;"></div></div>
+      <div class="muted" id="livro3CapsProgressoTexto" style="margin-bottom:8px;"></div>
+      <div class="btn-row" style="margin-top:0; margin-bottom:8px; align-items:center;">
+        <button class="chip primary" id="livro3TimerBtn" onclick="toggleTimer('livro3')"></button>
+        <span class="muted" id="livro3Timer"></span>
+      </div>
       <div class="row">
         <input type="number" id="livro3Paginas" placeholder="Páginas lidas hoje" min="0" oninput="setLivro3('paginas', this.value)">
+        <input type="number" id="livro3Caps" placeholder="Capítulos lidos hoje" min="0" oninput="setLivro3('caps', this.value)">
         <input type="number" id="livro3Min" placeholder="Minutos" min="0" oninput="setLivro3('min', this.value)">
       </div>
       <p class="muted" id="livro3SemTitulo" style="display:none;">Defina o título do livro na aba Planos.</p>
@@ -147,6 +162,11 @@
     <div class="card">
       <h2>⏱️ Minutos de leitura — últimos 7 dias</h2>
       <canvas id="chartMin" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>📚 Livros concluídos</h2>
+      <div id="livrosConcluidosList"></div>
     </div>
 
   </section>
@@ -183,7 +203,20 @@
       <h2>💼 Livro 3 — configurar</h2>
       <label>Título do livro</label>
       <input type="text" id="livro3TituloInput" placeholder="Ex: Spin Selling" oninput="setLivro3Titulo(this.value)">
-      <p class="muted" style="margin-top:8px;">Esse título fica só no seu celular (localStorage), não vai pro código do app.</p>
+      <div class="row" style="margin-top:8px;">
+        <div>
+          <label>Total de páginas do livro</label>
+          <input type="number" id="livro3TotalPaginasInput" min="0" placeholder="Ex: 240" oninput="setLivro3Config('livro3TotalPaginas', this.value)">
+        </div>
+        <div>
+          <label>Total de capítulos</label>
+          <input type="number" id="livro3TotalCapsInput" min="0" placeholder="Ex: 12" oninput="setLivro3Config('livro3TotalCapitulos', this.value)">
+        </div>
+      </div>
+      <p class="muted" style="margin-top:8px;">Esses dados ficam só no seu celular (localStorage), não vão pro código do app. Preencha o total de páginas e/ou capítulos pra ver a barra de progresso na aba Hoje.</p>
+      <div class="btn-row">
+        <button class="chip danger" onclick="concluirLivro3()">✅ Concluir livro e começar outro</button>
+      </div>
     </div>
 
   </section>
@@ -229,13 +262,21 @@ function loadData(){
       const d = JSON.parse(raw);
       if(d.settings.metaBibliaCaps==null) d.settings.metaBibliaCaps = 1;
       if(d.settings.metaEstoicoDias==null) d.settings.metaEstoicoDias = 1;
+      if(d.settings.livro3TotalPaginas===undefined) d.settings.livro3TotalPaginas = null;
+      if(d.settings.livro3TotalCapitulos===undefined) d.settings.livro3TotalCapitulos = null;
+      if(d.progresso.livro3Paginas==null) d.progresso.livro3Paginas = Object.values(d.logs).reduce((s,l)=> s + (l.livro3? l.livro3.paginas||0 : 0), 0);
+      if(d.progresso.livro3Caps==null) d.progresso.livro3Caps = Object.values(d.logs).reduce((s,l)=> s + (l.livro3? l.livro3.caps||0 : 0), 0);
+      if(!d.activeTimers) d.activeTimers = {};
+      if(!d.livrosConcluidos) d.livrosConcluidos = [];
       return d;
     }
   }catch(e){}
   return {
-    progresso: { bibliaIndex:0, estoicoDia:1 },
-    settings: { livro3Titulo:'', metaBibliaCaps:1, metaEstoicoDias:1 },
-    logs: {}
+    progresso: { bibliaIndex:0, estoicoDia:1, livro3Paginas:0, livro3Caps:0 },
+    settings: { livro3Titulo:'', metaBibliaCaps:1, metaEstoicoDias:1, livro3TotalPaginas:null, livro3TotalCapitulos:null },
+    logs: {},
+    activeTimers: {},
+    livrosConcluidos: []
   };
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
@@ -249,8 +290,9 @@ function getLog(dateKey){
   if(!DATA.logs[dateKey]) DATA.logs[dateKey] = {
     biblia:{ caps:0, min:0, nota:'' },
     estoico:{ caps:0, min:0, nota:'' },
-    livro3:{ paginas:0, min:0, nota:'' }
+    livro3:{ paginas:0, caps:0, min:0, nota:'' }
   };
+  if(DATA.logs[dateKey].livro3.caps===undefined) DATA.logs[dateKey].livro3.caps = 0;
   return DATA.logs[dateKey];
 }
 
@@ -276,8 +318,40 @@ function renderNotaOntem(tipo, elId){
   }
 }
 
+/* ====================== CRONÔMETRO ====================== */
+function toggleTimer(tipo){
+  const log = getLog();
+  if(DATA.activeTimers[tipo]){
+    const elapsedMin = Math.max(1, Math.round((Date.now() - DATA.activeTimers[tipo])/60000));
+    log[tipo].min = (log[tipo].min||0) + elapsedMin;
+    DATA.activeTimers[tipo] = null;
+  } else {
+    DATA.activeTimers[tipo] = Date.now();
+  }
+  saveData(); renderHoje();
+}
+function updateTimerDisplays(){
+  ['biblia','estoico','livro3'].forEach(tipo=>{
+    const btn = document.getElementById(tipo+'TimerBtn');
+    const el = document.getElementById(tipo+'Timer');
+    if(!btn || !el) return;
+    if(DATA.activeTimers[tipo]){
+      const mins = Math.floor((Date.now()-DATA.activeTimers[tipo])/60000);
+      btn.textContent = '⏹️ Finalizar leitura';
+      btn.classList.remove('primary'); btn.classList.add('danger');
+      el.textContent = `⏱️ Lendo há ${mins} min`;
+    } else {
+      btn.textContent = '▶️ Iniciar leitura';
+      btn.classList.remove('danger'); btn.classList.add('primary');
+      el.textContent = '';
+    }
+  });
+}
+setInterval(updateTimerDisplays, 30000);
+
 function renderHoje(){
   const log = getLog();
+  updateTimerDisplays();
   renderNotaOntem('biblia','bibliaNotaOntem');
   renderNotaOntem('estoico','estoicoNotaOntem');
   renderNotaOntem('livro3','livro3NotaOntem');
@@ -329,9 +403,27 @@ function renderHoje(){
   const titulo = DATA.settings.livro3Titulo;
   document.getElementById('livro3Titulo').textContent = titulo || 'Nenhum livro definido';
   document.getElementById('livro3SemTitulo').style.display = titulo ? 'none' : 'block';
-  const totalPaginas = Object.values(DATA.logs).reduce((s,l)=> s + (l.livro3? l.livro3.paginas||0 : 0), 0);
-  document.getElementById('livro3ProgressoTexto').textContent = titulo ? `Total lido até agora: ${totalPaginas} páginas` : '';
+  const lidoPag = DATA.progresso.livro3Paginas;
+  const lidoCaps = DATA.progresso.livro3Caps;
+  const totalPag = DATA.settings.livro3TotalPaginas;
+  const totalCaps = DATA.settings.livro3TotalCapitulos;
+  if(titulo && totalPag){
+    const pct = Math.min(100, Math.round(lidoPag/totalPag*100));
+    document.getElementById('livro3ProgressBar').style.display = 'block';
+    document.getElementById('livro3ProgressFill').style.width = pct+'%';
+    document.getElementById('livro3ProgressoTexto').textContent = `${lidoPag} de ${totalPag} páginas (${pct}%)`;
+  } else {
+    document.getElementById('livro3ProgressBar').style.display = 'none';
+    document.getElementById('livro3ProgressoTexto').textContent = titulo ? `Total lido até agora: ${lidoPag} páginas` : '';
+  }
+  if(titulo && totalCaps){
+    const pctCaps = Math.min(100, Math.round(lidoCaps/totalCaps*100));
+    document.getElementById('livro3CapsProgressoTexto').textContent = `${lidoCaps} de ${totalCaps} capítulos (${pctCaps}%)`;
+  } else {
+    document.getElementById('livro3CapsProgressoTexto').textContent = '';
+  }
   document.getElementById('livro3Paginas').value = log.livro3.paginas || '';
+  document.getElementById('livro3Caps').value = log.livro3.caps || '';
   document.getElementById('livro3Min').value = log.livro3.min || '';
 }
 
@@ -373,7 +465,15 @@ function setMeta(field, val){
 
 function setLivro3(field, val){
   const log = getLog();
-  log.livro3[field] = val ? parseInt(val) : 0;
+  const novo = Math.max(0, val ? parseInt(val) : 0);
+  if(field==='paginas' || field==='caps'){
+    const delta = novo - (log.livro3[field]||0);
+    log.livro3[field] = novo;
+    const acumKey = field==='paginas' ? 'livro3Paginas' : 'livro3Caps';
+    DATA.progresso[acumKey] = Math.max(0, DATA.progresso[acumKey] + delta);
+  } else {
+    log.livro3[field] = novo;
+  }
   saveData(); renderHoje();
 }
 
@@ -382,13 +482,34 @@ function setLivro3Titulo(val){
   saveData(); renderHoje();
 }
 
+function setLivro3Config(field, val){
+  DATA.settings[field] = val ? parseInt(val) : null;
+  saveData(); renderHoje();
+}
+
+function concluirLivro3(){
+  if(!DATA.settings.livro3Titulo){ alert('Defina o título do livro primeiro.'); return; }
+  if(!confirm(`Marcar "${DATA.settings.livro3Titulo}" como concluído e começar um novo livro?`)) return;
+  DATA.livrosConcluidos.push({
+    titulo: DATA.settings.livro3Titulo,
+    paginas: DATA.progresso.livro3Paginas,
+    dataConclusao: todayKey()
+  });
+  DATA.settings.livro3Titulo = '';
+  DATA.settings.livro3TotalPaginas = null;
+  DATA.settings.livro3TotalCapitulos = null;
+  DATA.progresso.livro3Paginas = 0;
+  DATA.progresso.livro3Caps = 0;
+  saveData(); renderHoje(); renderPlanos(); renderLivrosConcluidos();
+}
+
 /* ====================== PROGRESSO ====================== */
 let chartMin = null;
 function renderProgresso(){
   document.getElementById('statBiblia').textContent = Math.round(DATA.progresso.bibliaIndex/BIBLIA_SEQ.length*100)+'%';
   document.getElementById('statEstoico').textContent = `${DATA.progresso.estoicoDia-1}/${ESTOICO_TOTAL_DIAS}`;
-  const totalPaginas = Object.values(DATA.logs).reduce((s,l)=> s + (l.livro3? l.livro3.paginas||0 : 0), 0);
-  document.getElementById('statLivro3').textContent = totalPaginas;
+  document.getElementById('statLivro3').textContent = DATA.progresso.livro3Paginas;
+  renderLivrosConcluidos();
 
   // streak
   let streak=0;
@@ -436,6 +557,16 @@ function renderPlanos(){
   document.getElementById('bibliaOrdemLista').innerHTML = h
     + `<p class="muted" style="margin-top:8px;">Progresso atual: capítulo ${idx} de ${BIBLIA_SEQ.length} do ciclo.</p>`;
   document.getElementById('livro3TituloInput').value = DATA.settings.livro3Titulo || '';
+  document.getElementById('livro3TotalPaginasInput').value = DATA.settings.livro3TotalPaginas || '';
+  document.getElementById('livro3TotalCapsInput').value = DATA.settings.livro3TotalCapitulos || '';
+}
+
+/* ====================== LIVROS CONCLUÍDOS ====================== */
+function renderLivrosConcluidos(){
+  const el = document.getElementById('livrosConcluidosList');
+  const lista = DATA.livrosConcluidos || [];
+  if(!lista.length){ el.innerHTML = '<p class="muted">Nenhum livro concluído ainda.</p>'; return; }
+  el.innerHTML = lista.map(l=>`<div class="livro-item done"><strong>${l.titulo}</strong> — ${l.paginas} páginas · concluído em ${l.dataConclusao.slice(8,10)}/${l.dataConclusao.slice(5,7)}/${l.dataConclusao.slice(0,4)}</div>`).join('');
 }
 
 /* ====================== INIT ====================== */
