@@ -171,19 +171,8 @@
 
     <div class="card">
       <h2>🏋️ Treino de hoje</h2>
-      <div id="restTimerBar" class="rest-bar" style="display:none;"></div>
-      <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
-      <label>O que foi hoje?</label>
-      <select id="workoutType" onchange="setWorkoutType(this.value)">
-        <option value="">Selecione...</option>
-        <option value="treinoA">Treino A — Pernas + Core</option>
-        <option value="treinoB">Treino B — Costas + Core</option>
-        <option value="treinoC">Treino C — Pernas (posterior/glúteo) + Core</option>
-        <option value="corrida">Corrida / Esteira</option>
-        <option value="treinoCasa">Treino Casa (Plano B)</option>
-        <option value="descanso">Descanso</option>
-      </select>
-      <div id="workoutArea" style="margin-top:10px;"></div>
+      <div id="treinoResumoHoje"></div>
+      <button class="chip primary" style="margin-top:10px;" onclick="switchTab('treino')">Acompanhar na aba Treino →</button>
     </div>
 
     <div class="card">
@@ -230,6 +219,22 @@
 
   <!-- TAB: TREINO -->
   <section class="tab" id="tab-treino">
+    <div class="card">
+      <h2>✅ Registrar treino de hoje</h2>
+      <div id="restTimerBar" class="rest-bar" style="display:none;"></div>
+      <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
+      <label>O que foi hoje?</label>
+      <select id="workoutType" onchange="setWorkoutType(this.value)">
+        <option value="">Selecione...</option>
+        <option value="treinoA">Treino A — Pernas + Core</option>
+        <option value="treinoB">Treino B — Costas + Core</option>
+        <option value="treinoC">Treino C — Pernas (posterior/glúteo) + Core</option>
+        <option value="corrida">Corrida / Esteira</option>
+        <option value="treinoCasa">Treino Casa (Plano B)</option>
+        <option value="descanso">Descanso</option>
+      </select>
+      <div id="workoutArea" style="margin-top:10px;"></div>
+    </div>
     <div class="card">
       <h2>📅 Grade da semana</h2>
       <div id="planGrade"></div>
@@ -665,8 +670,12 @@ function setWorkoutType(type){
   log.workoutType = type;
   saveData();
   renderWorkoutArea();
+  renderTreinoResumoHoje();
 }
 
+function defaultSet(exDef){
+  return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false };
+}
 function exerciseRow(exId, exDef, storeObj, kind){
   // kind: 'carga' (sets com peso/reps) ou 'casa' (checklist)
   const data = storeObj[exId] || (storeObj[exId] = { nome: exDef.nome, sub:'', sets:[] });
@@ -686,7 +695,7 @@ function exerciseRow(exId, exDef, storeObj, kind){
     const n = exDef.series;
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
-      const s = data.sets[i] || {peso:'', reps:'', done:false};
+      const s = data.sets[i] || defaultSet(exDef);
       html += `<div class="set-row">
         <div class="set-idx">${i+1}</div>
         <input type="number" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
@@ -717,17 +726,19 @@ function setSub(exId, kind, alt){
 function setSetField(exId, kind, idx, field, val){
   const log = getLog();
   const store = kind==='carga' ? log.exercises : log.treinoCasa;
-  if(!store[exId].sets[idx]) store[exId].sets[idx] = {peso:'',reps:'',done:false};
+  const exDef = kind==='carga' ? PLAN[log.workoutType].find(e=>(e.id||e.nome)===exId) : null;
+  if(!store[exId].sets[idx]) store[exId].sets[idx] = exDef ? defaultSet(exDef) : {peso:'',reps:'',done:false};
   store[exId].sets[idx][field] = val;
-  saveData();
+  saveData(); renderTreinoResumoHoje();
 }
 function toggleSetDone(exId, kind, idx){
   const log = getLog();
   const store = kind==='carga' ? log.exercises : log.treinoCasa;
-  if(!store[exId].sets[idx]) store[exId].sets[idx] = {peso:'',reps:'',done:false};
+  const exDef = kind==='carga' ? PLAN[log.workoutType].find(e=>(e.id||e.nome)===exId) : null;
+  if(!store[exId].sets[idx]) store[exId].sets[idx] = exDef ? defaultSet(exDef) : {peso:'',reps:'',done:false};
   const wasDone = store[exId].sets[idx].done;
   store[exId].sets[idx].done = !wasDone;
-  saveData(); renderWorkoutArea();
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
   if(!wasDone) startRestTimer();
 }
 
@@ -812,7 +823,45 @@ function setCorridaField(field, val){
   const log = getLog();
   log.corrida = log.corrida || {};
   log.corrida[field] = val;
-  saveData();
+  saveData(); renderTreinoResumoHoje();
+}
+
+/* ====================== HOJE: RESUMO DO TREINO (consolidado da aba Treino) ====================== */
+function renderTreinoResumoHoje(){
+  const el = document.getElementById('treinoResumoHoje');
+  if(!el) return;
+  const log = getLog();
+  const type = log.workoutType;
+  if(!type){
+    el.innerHTML = `<p class="muted">Nenhum treino registrado ainda hoje.</p>`;
+    return;
+  }
+  if(type==='treinoA' || type==='treinoB' || type==='treinoC'){
+    const list = PLAN[type];
+    const label = type==='treinoA'?'Treino A — Pernas + Core':type==='treinoB'?'Treino B — Costas + Core':'Treino C — Pernas (posterior/glúteo) + Core';
+    let totalSets=0, doneSets=0, totalKg=0;
+    list.forEach(ex=>{
+      const data = (log.exercises||{})[ex.id];
+      for(let i=0;i<ex.series;i++){
+        totalSets++;
+        const s = data && data.sets[i];
+        if(s && s.done){ doneSets++; if(s.peso) totalKg += parseFloat(s.peso)||0; }
+      }
+    });
+    el.innerHTML = `<div class="exercise"><div class="ex-title"><span>${label}</span><span class="muted">${doneSets}/${totalSets} séries</span></div>
+      <div class="ex-meta">Carga total registrada nas séries feitas: ${totalKg.toFixed(0)} kg somados</div></div>`;
+  } else if(type==='treinoCasa'){
+    const list = PLAN.treinoCasa;
+    let done=0;
+    list.forEach((ex,i)=>{ const s=(log.treinoCasa||{})['casa'+i]; if(s && s.sets[0] && s.sets[0].done) done++; });
+    el.innerHTML = `<div class="exercise"><div class="ex-title"><span>Treino Casa (Plano B)</span><span class="muted">${done}/${list.length} feitos</span></div></div>`;
+  } else if(type==='corrida'){
+    const c = log.corrida || {};
+    el.innerHTML = `<div class="exercise"><div class="ex-title"><span>Corrida / Esteira</span></div>
+      <div class="ex-meta">${c.tipo||'—'} · ${c.tempo||0} min${c.distancia?' · '+c.distancia+'km':''}</div></div>`;
+  } else if(type==='descanso'){
+    el.innerHTML = `<p class="muted">Dia de descanso 🙂</p>`;
+  }
 }
 
 /* ====================== HOJE: REFEIÇÕES ====================== */
@@ -1391,6 +1440,7 @@ function initToday(){
   renderPeso();
   renderSono();
   renderWorkoutArea();
+  renderTreinoResumoHoje();
   renderJejum();
   renderSuplementos();
   renderFoodDatalist();
