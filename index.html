@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Saúde do Ítalo</title>
-<link rel="icon" href="data:,">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-apple-touch.png">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Saúde Ítalo">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   :root{
@@ -314,6 +320,10 @@
     <div class="card">
       <h2>📊 Esta semana vs semana passada</h2>
       <div id="cardioWeekSummary"></div>
+    </div>
+    <div class="card">
+      <h2>📈 Evolução (últimas 8 semanas)</h2>
+      <canvas id="chartCardioEvol" height="180"></canvas>
     </div>
     <div class="card">
       <h2>📈 Progressão planejada</h2>
@@ -1042,6 +1052,7 @@ function renderCardioTab(){
   recordsEl.innerHTML = cardioRecordsHtml();
   const weekSummaryEl = document.getElementById('cardioWeekSummary');
   if(weekSummaryEl) weekSummaryEl.innerHTML = cardioWeekSummaryHtml();
+  renderChartCardioEvol();
   const challengeCard = document.getElementById('cardioChallengeCard');
   const challengeEl = document.getElementById('cardioChallenge');
   if(challengeCard && challengeEl){
@@ -1756,7 +1767,7 @@ function renderBadges(){
   document.getElementById('badges').innerHTML = html;
 }
 
-let chartPeso, chartAgua, chartCargas, chartSono;
+let chartPeso, chartAgua, chartCargas, chartSono, chartCardioEvol;
 let compModo = 'semana';
 
 function renderChartPeso(){
@@ -1819,6 +1830,35 @@ function renderChartSono(){
   });
 }
 
+function renderChartCardioEvol(){
+  const el = document.getElementById('chartCardioEvol');
+  if(!el) return;
+  const weeksBack = 8;
+  const labels = [], kms = [], kcals = [];
+  for(let w=weeksBack-1; w>=0; w--){
+    const stats = cardioWeekStats(w);
+    const dates = weekDatesRange(w);
+    labels.push(dates[0].slice(5));
+    kms.push(Math.round(stats.km*10)/10);
+    kcals.push(Math.round(stats.kcal));
+  }
+  if(chartCardioEvol) chartCardioEvol.destroy();
+  chartCardioEvol = new Chart(el, {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'Km/semana', data:kms, borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,.15)', tension:.3, fill:true, yAxisID:'y' },
+      { label:'Kcal/semana', data:kcals, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,.1)', tension:.3, fill:true, yAxisID:'y1' }
+    ]},
+    options:{
+      scales:{
+        y:{ position:'left', ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} },
+        y1:{ position:'right', ticks:{color:'#9aa3b2'}, grid:{drawOnChartArea:false} },
+        x:{ ticks:{color:'#9aa3b2'}, grid:{color:'#2b2f3a'} }
+      },
+      plugins:{ legend:{ labels:{color:'#eef1f5'} } }
+    }
+  });
+}
 function fillExerciseSelect(){
   const sel = document.getElementById('exSelect');
   const all = PLAN.treinoA.concat(PLAN.treinoB, PLAN.treinoC);
