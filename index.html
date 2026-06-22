@@ -63,6 +63,13 @@
   .rest-bar.done{background:rgba(56,189,248,.12); border-color:var(--accent2);}
   .rest-bar.done .rest-time{color:var(--accent2);}
 
+  .corrida-timer{text-align:center; padding:12px; border-radius:10px; background:var(--card2); border:1px solid var(--border);}
+  .corrida-timer.trote{border-color:var(--danger); background:rgba(248,113,113,.10);}
+  .corrida-timer.caminhada{border-color:var(--accent2); background:rgba(56,189,248,.10);}
+  .corrida-timer .ct-phase{font-weight:700; font-size:14px; margin-bottom:4px;}
+  .corrida-timer .ct-time{font-size:32px; font-weight:700;}
+  .corrida-timer .ct-total{font-size:12px; margin-top:4px;}
+
   .meal{margin-bottom:14px;}
   .meal-title{font-weight:600; font-size:14px; margin-bottom:6px;}
   .opt{display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px;}
@@ -800,8 +807,21 @@ function renderWorkoutArea(){
     area.innerHTML = h;
   } else if(log.workoutType==='corrida'){
     log.corrida = log.corrida || {tipo:'', tempo:'', distancia:''};
+    const cfg = corridaConfig();
     area.innerHTML = `
-      <label>Tipo</label>
+      <div class="exercise">
+        <div class="ex-title"><span>⏱ Timer intervalado (trote/caminhada)</span></div>
+        <div class="row" style="margin-top:8px;">
+          <div><label>Aquecimento (min)</label><input type="number" value="${cfg.aquecimento/60}" onchange="setCorridaConfig('aquecimento', this.value*60)"></div>
+          <div><label>Trote (s)</label><input type="number" value="${cfg.trote}" onchange="setCorridaConfig('trote', this.value)"></div>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <div><label>Caminhada (s)</label><input type="number" value="${cfg.caminhada}" onchange="setCorridaConfig('caminhada', this.value)"></div>
+          <div><label>Blocos</label><input type="number" value="${cfg.blocos}" onchange="setCorridaConfig('blocos', this.value)"></div>
+        </div>
+        <div id="corridaTimerBox" style="margin-top:10px;"></div>
+      </div>
+      <label style="margin-top:10px;">Tipo</label>
       <select onchange="setCorridaField('tipo',this.value)">
         <option value="">Selecione...</option>
         <option value="Caminhada" ${log.corrida.tipo==='Caminhada'?'selected':''}>Caminhada</option>
@@ -811,7 +831,9 @@ function renderWorkoutArea(){
       <div class="row" style="margin-top:8px;">
         <div><label>Tempo (min)</label><input type="number" value="${log.corrida.tempo}" oninput="setCorridaField('tempo',this.value)"></div>
         <div><label>Distância (km, opcional)</label><input type="number" step="0.1" value="${log.corrida.distancia}" oninput="setCorridaField('distancia',this.value)"></div>
-      </div>`;
+      </div>
+      ${log.corrida.blocosFeitos ? `<p class="muted" style="margin-top:6px;">Último timer: ${log.corrida.blocosFeitos} bloco(s) de trote/caminhada concluídos.</p>` : ''}`;
+    renderCorridaTimer();
   } else if(log.workoutType==='descanso'){
     area.innerHTML = `<p class="muted">Dia de descanso — sem problema, descanso também é parte do plano.</p>`;
   } else {
@@ -823,6 +845,103 @@ function setCorridaField(field, val){
   log.corrida = log.corrida || {};
   log.corrida[field] = val;
   saveData(); renderTreinoResumoHoje();
+}
+
+/* ====================== TIMER INTERVALADO DE CORRIDA ====================== */
+function corridaConfig(){
+  if(!DATA.settings.corridaConfig) DATA.settings.corridaConfig = { aquecimento:300, trote:45, caminhada:90, blocos:6 };
+  return DATA.settings.corridaConfig;
+}
+function setCorridaConfig(field, val){
+  const cfg = corridaConfig();
+  cfg[field] = Math.max(0, parseInt(val)||0);
+  saveData();
+}
+let corridaRun = null;
+let corridaRunInterval = null;
+function startCorridaTimer(){
+  const cfg = corridaConfig();
+  corridaRun = { phase:'aquecimento', phaseTime:cfg.aquecimento, blockIdx:0, totalSec:0, running:true };
+  if(corridaRunInterval) clearInterval(corridaRunInterval);
+  corridaRunInterval = setInterval(corridaTick, 1000);
+  renderCorridaTimer();
+}
+function corridaTick(){
+  if(!corridaRun) return;
+  corridaRun.totalSec++;
+  corridaRun.phaseTime--;
+  if(corridaRun.phaseTime<=0) advanceCorridaPhase();
+  renderCorridaTimer();
+}
+function advanceCorridaPhase(){
+  const cfg = corridaConfig();
+  if(navigator.vibrate) navigator.vibrate(200);
+  if(corridaRun.phase==='aquecimento'){
+    corridaRun.phase='trote'; corridaRun.blockIdx=1; corridaRun.phaseTime=cfg.trote;
+  } else if(corridaRun.phase==='trote'){
+    corridaRun.phase='caminhada'; corridaRun.phaseTime=cfg.caminhada;
+  } else if(corridaRun.phase==='caminhada'){
+    if(corridaRun.blockIdx>=cfg.blocos){ finishCorridaTimer(); return; }
+    corridaRun.blockIdx++; corridaRun.phase='trote'; corridaRun.phaseTime=cfg.trote;
+  }
+}
+function pauseCorridaTimer(){
+  if(corridaRunInterval){ clearInterval(corridaRunInterval); corridaRunInterval=null; }
+  if(corridaRun) corridaRun.running=false;
+  renderCorridaTimer();
+}
+function resumeCorridaTimer(){
+  if(!corridaRun) return;
+  corridaRun.running=true;
+  corridaRunInterval = setInterval(corridaTick, 1000);
+  renderCorridaTimer();
+}
+function resetCorridaTimer(){
+  if(corridaRunInterval) clearInterval(corridaRunInterval);
+  corridaRunInterval=null; corridaRun=null;
+  renderCorridaTimer();
+}
+function finishCorridaTimer(){
+  if(corridaRunInterval) clearInterval(corridaRunInterval);
+  corridaRunInterval=null;
+  if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+  const log = getLog();
+  log.corrida = log.corrida || {};
+  log.corrida.tipo = 'Intervalado';
+  log.corrida.tempo = Math.round(corridaRun.totalSec/60);
+  log.corrida.blocosFeitos = corridaRun.blockIdx;
+  saveData();
+  corridaRun.phase = 'fim';
+  renderWorkoutArea();
+  renderTreinoResumoHoje();
+}
+function renderCorridaTimer(){
+  const box = document.getElementById('corridaTimerBox');
+  if(!box) return;
+  if(!corridaRun){
+    box.innerHTML = `<button class="chip primary" onclick="startCorridaTimer()">▶ Iniciar treino intervalado</button>`;
+    return;
+  }
+  const cfg = corridaConfig();
+  const mm = String(Math.floor(Math.max(0,corridaRun.phaseTime)/60)).padStart(2,'0');
+  const ss = String(Math.max(0,corridaRun.phaseTime)%60).padStart(2,'0');
+  const totalMin = String(Math.floor(corridaRun.totalSec/60)).padStart(2,'0');
+  const totalSecRest = String(corridaRun.totalSec%60).padStart(2,'0');
+  let phaseLabel, phaseClass='';
+  if(corridaRun.phase==='aquecimento'){ phaseLabel='Aquecimento'; }
+  else if(corridaRun.phase==='trote'){ phaseLabel=`🏃 Trote (bloco ${corridaRun.blockIdx}/${cfg.blocos})`; phaseClass='trote'; }
+  else if(corridaRun.phase==='caminhada'){ phaseLabel=`🚶 Caminhada (bloco ${corridaRun.blockIdx}/${cfg.blocos})`; phaseClass='caminhada'; }
+  else { phaseLabel='Treino concluído! 🎉'; }
+  box.innerHTML = `<div class="corrida-timer ${phaseClass}">
+    <div class="ct-phase">${phaseLabel}</div>
+    ${corridaRun.phase!=='fim' ? `<div class="ct-time">${mm}:${ss}</div>` : ''}
+    <div class="ct-total muted">Total: ${totalMin}:${totalSecRest}</div>
+    <div class="rest-actions" style="margin-top:8px; justify-content:center;">
+      ${corridaRun.phase==='fim' ? `<button onclick="resetCorridaTimer()">Novo treino</button>` :
+        corridaRun.running ? `<button onclick="pauseCorridaTimer()">⏸ Pausar</button>` : `<button onclick="resumeCorridaTimer()">▶ Retomar</button>`}
+      ${corridaRun.phase!=='fim' ? `<button onclick="resetCorridaTimer()">Cancelar</button>` : ''}
+    </div>
+  </div>`;
 }
 
 /* ====================== HOJE: RESUMO DO TREINO (consolidado da aba Treino) ====================== */
@@ -857,7 +976,7 @@ function renderTreinoResumoHoje(){
   } else if(type==='corrida'){
     const c = log.corrida || {};
     el.innerHTML = `<div class="exercise"><div class="ex-title"><span>Corrida / Esteira</span></div>
-      <div class="ex-meta">${c.tipo||'—'} · ${c.tempo||0} min${c.distancia?' · '+c.distancia+'km':''}</div></div>`;
+      <div class="ex-meta">${c.tipo||'—'} · ${c.tempo||0} min${c.distancia?' · '+c.distancia+'km':''}${c.blocosFeitos?' · '+c.blocosFeitos+' blocos trote/caminhada':''}</div></div>`;
   } else if(type==='descanso'){
     el.innerHTML = `<p class="muted">Dia de descanso 🙂</p>`;
   }
