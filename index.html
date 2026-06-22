@@ -48,6 +48,11 @@
   .exercise{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; background:var(--card2);}
   .exercise .ex-title{font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:6px;}
   .exercise .ex-meta{font-size:12px; color:var(--muted); margin-top:2px;}
+  .exercise.exercise-done{border-color:var(--accent); background:rgba(74,222,128,.10);}
+  .exercise .ex-done-badge{font-size:11px; font-weight:700; color:var(--accent); background:rgba(74,222,128,.15); border-radius:12px; padding:3px 8px; flex:none;}
+  .exercise.exercise-skipped{opacity:.55;}
+  .exercise .ex-skip-btn{margin-top:8px; background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:6px 10px; font-size:12px;}
+  .exercise .ex-skip-badge{font-size:11px; font-weight:700; color:var(--muted); background:var(--card); border-radius:12px; padding:3px 8px; flex:none;}
   .exercise .ex-obs{font-size:12px; color:var(--warn); margin-top:4px;}
   .sets{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
   .set-row{display:flex; gap:6px; align-items:center;}
@@ -717,10 +722,20 @@ function maxPesoForExercise(exId){
 function exerciseRow(exId, exDef, storeObj, kind){
   // kind: 'carga' (sets com peso/reps) ou 'casa' (checklist)
   const data = storeObj[exId] || (storeObj[exId] = { nome: exDef.nome, sub:'', sets:[] });
-  let html = `<div class="exercise">
-    <div class="ex-title"><span>${data.sub || exDef.nome}</span></div>
+  const n = kind==='carga' ? exDef.series : 1;
+  let doneCount = 0;
+  for(let i=0;i<n;i++){ if(data.sets[i] && data.sets[i].done) doneCount++; }
+  const allDone = n>0 && doneCount===n;
+  const skipped = !!data.skip;
+  let html = `<div class="exercise ${allDone?'exercise-done':''} ${skipped?'exercise-skipped':''}">
+    <div class="ex-title"><span>${data.sub || exDef.nome}</span>${allDone?'<span class="ex-done-badge">✓ Finalizado</span>':''}${skipped?'<span class="ex-skip-badge">Pulado hoje</span>':''}</div>
     <div class="ex-meta">${exDef.series ? exDef.series+'x'+exDef.reps : exDef.desc||''}</div>`;
   if(exDef.obs) html += `<div class="ex-obs">⚠️ ${exDef.obs}</div>`;
+  if(skipped){
+    html += `<button class="ex-skip-btn" onclick="setExerciseSkip('${exId}','${kind}',false)">↩ Desfazer (vou fazer este exercício)</button>`;
+    html += `</div>`;
+    return html;
+  }
   if(exDef.alternativas){
     html += `<select onchange="setSub('${exId}','${kind}',this.value)" style="margin-top:8px;">
       <option value="">Substituir exercício (se necessário)...</option>`;
@@ -730,7 +745,6 @@ function exerciseRow(exId, exDef, storeObj, kind){
     html += `</select>`;
   }
   if(kind==='carga'){
-    const n = exDef.series;
     const pr = maxPesoForExercise(exId);
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
@@ -753,6 +767,7 @@ function exerciseRow(exId, exDef, storeObj, kind){
       <span style="font-size:13px; color:var(--muted);">Feito</span>
     </div></div>`;
   }
+  html += `<button class="ex-skip-btn" onclick="setExerciseSkip('${exId}','${kind}',true)">⏭ Pular este exercício hoje</button>`;
   html += `</div>`;
   return html;
 }
@@ -782,6 +797,13 @@ function toggleSetDone(exId, kind, idx){
   store[exId].sets[idx].done = !wasDone;
   saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
   if(!wasDone) startRestTimer();
+}
+function setExerciseSkip(exId, kind, skip){
+  const log = getLog();
+  const store = kind==='carga' ? log.exercises : log.treinoCasa;
+  if(!store[exId]) store[exId] = { nome:'', sub:'', sets:[] };
+  store[exId].skip = skip;
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
 }
 
 /* ====================== TIMER DE DESCANSO ====================== */
@@ -832,6 +854,7 @@ function treinoSessionStats(type, log){
   let totalSets=0, doneSets=0, totalKg=0;
   list.forEach(ex=>{
     const data = (log.exercises||{})[ex.id];
+    if(data && data.skip) return;
     for(let i=0;i<ex.series;i++){
       totalSets++;
       const s = data && data.sets[i];
@@ -1095,17 +1118,8 @@ function renderTreinoResumoHoje(){
     return;
   }
   if(type==='treinoA' || type==='treinoB' || type==='treinoC'){
-    const list = PLAN[type];
     const label = type==='treinoA'?'Treino A — Pernas + Core':type==='treinoB'?'Treino B — Costas + Core':'Treino C — Pernas (posterior/glúteo) + Core';
-    let totalSets=0, doneSets=0, totalKg=0;
-    list.forEach(ex=>{
-      const data = (log.exercises||{})[ex.id];
-      for(let i=0;i<ex.series;i++){
-        totalSets++;
-        const s = data && data.sets[i];
-        if(s && s.done){ doneSets++; if(s.peso) totalKg += parseFloat(s.peso)||0; }
-      }
-    });
+    const { totalSets, doneSets, totalKg } = treinoSessionStats(type, log);
     el.innerHTML = `<div class="exercise"><div class="ex-title"><span>${label}</span><span class="muted">${doneSets}/${totalSets} séries</span></div>
       <div class="ex-meta">Carga total registrada nas séries feitas: ${totalKg.toFixed(0)} kg somados</div></div>`;
   } else if(type==='treinoCasa'){
