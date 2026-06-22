@@ -27,7 +27,8 @@
   .tab.active{display:block; animation:fade .2s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
 
-  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px; transition:background .3s, border-color .3s;}
+  .card.goal-done{border-color:var(--accent); background:rgba(74,222,128,.08);}
   .card h2{margin:0 0 10px; font-size:15px; color:var(--accent2); display:flex; align-items:center; gap:6px;}
   .card details summary{font-size:15px; color:var(--accent2); cursor:pointer; list-style:none;}
   .card details summary::-webkit-details-marker{display:none;}
@@ -168,8 +169,8 @@
   <!-- TAB: HOJE -->
   <section class="tab active" id="tab-hoje">
 
-    <div class="card">
-      <h2>💧 Água</h2>
+    <div class="card" id="waterCard">
+      <h2>💧 Água<span id="waterBadge" style="display:none; margin-left:auto; font-size:11px; font-weight:700; color:var(--accent); background:rgba(74,222,128,.15); border-radius:12px; padding:3px 8px;">✓ Meta batida!</span></h2>
       <div class="progress"><div id="waterBar"></div></div>
       <div class="progress-label"><span id="waterLabel"></span><span id="waterPct"></span></div>
       <div class="btn-row">
@@ -513,6 +514,15 @@ const PLAN = {
     { id:'corec', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
       alternativas:['Abdominal Isométrico'] }
   ],
+  // Banco de exercícios por grupo muscular, pra escolher exercícios extras sem precisar saber o nome de cabeça
+  bancoExercicios: {
+    'Inferiores (pernas)': ['Leg press 45°','Leg press horizontal / leg 90°','Agachamento livre','Agachamento smith','Agachamento sumô','Cadeira extensora','Cadeira extensora unilateral','Cadeira flexora (posterior de coxa)','Cadeira flexora unilateral','Mesa flexora','Cadeira adutora','Cadeira abdutora','Avanço estático','Caminhada afundo','Búlgaro','Stiff','Elevação pélvica / Hip thrust','Glúteo máquina','Glúteo cabo perna estendida','Glúteo kick back cabo','Panturrilha em pé','Panturrilha sentado'],
+    'Superiores — Costas': ['Puxada pela frente barra','Puxada pela frente triângulo','Puxada pela frente militar','Remada sentado triângulo','Remada máquina fechada/neutra','Remada barra livre','Puxada unilateral','Remada unilateral polia','Remada unilateral halteres','Remada cavalinho','Crucifixo posterior halter','Crucifixo posterior cabo','Peck deck posterior','Deltoide posterior esquiador'],
+    'Braços (bíceps/tríceps)': ['Bíceps unilateral cabo','Bíceps unilateral halter','Rosca direta barra','Rosca alternada halter','Rosca alternada cabo','Rosca polia barra/corda','Tríceps corda','Tríceps cabo barra reta','Tríceps unilateral cabo'],
+    'Core / Lombar': ['Prancha abdominal frontal','Prancha lateral','Abdominal infra','Abdominal reto','Abdominal oblíquo','Abdominal canivete','Extensão dorsal banco romano','Extensão dorsal máquina'],
+    'Ombro / Empurrar (cuidado — carga leve)': ['Supino reto/máquina/smith','Supino inclinado','Desenvolvimento halter/máquina','Desenvolvimento ombro frontal','Arnold press','Fly halter / Peck deck','Paralelas máquina'],
+    'Mobilidade / Alongamento': ['Mobilidade de pescoço','Mobilidade de ombro','Mobilidade de quadril','Postura da criança','Alongamento isquiotibiais','Alongamento de trapézio']
+  },
   corrida: [
     { fase:'Semana 1 (atual)', desc:'Aquecimento: 5 min caminhada a 5.5 km/h. Depois 6 blocos de: trote a 9 km/h por 30-60s + caminhada/recuperação a 5.5 km/h por ~1:30. Total ~22-25 min.' },
     { fase:'Semana 2 (próxima)', desc:'Mesmo modelo, ajustando só 1 variável por vez: trotes mais consistentes (45-60s) OU recuperação um pouco menor (~1:15). Critério: sem dor articular/lombar e FC confortável (perto de 126bpm) na semana anterior.' },
@@ -681,6 +691,9 @@ function renderAgua(){
   document.getElementById('waterBar').style.width = pct+'%';
   document.getElementById('waterLabel').textContent = (log.water/1000).toFixed(2)+'L / '+(PLAN.metas.agua/1000)+'L';
   document.getElementById('waterPct').textContent = pct+'%';
+  const atingiu = log.water >= PLAN.metas.agua;
+  document.getElementById('waterCard').classList.toggle('goal-done', atingiu);
+  document.getElementById('waterBadge').style.display = atingiu ? 'inline-block' : 'none';
 }
 function addWater(ml){
   const log = getLog();
@@ -826,15 +839,39 @@ function renderExtraExercises(log){
     });
     h += `</div><button class="ex-skip-btn" onclick="addExtraSet('${ex.id}')">+ série</button></div>`;
   });
-  h += `<div class="add-food-row" style="margin-top:8px;">
-    <input type="text" id="extraExNome" placeholder="Nome do exercício (ex: Puxada alta)" style="flex:2;">
-    <button onclick="addExtraExercise()">+ Adicionar</button>
-  </div></div>`;
+  h += `<div class="row" style="margin-top:8px;">
+    <div><label>Grupo muscular</label>
+      <select id="extraExGrupo" onchange="fillExtraExOptions()">
+        <option value="">Selecione...</option>
+        ${Object.keys(PLAN.bancoExercicios).map(g=>`<option value="${g}">${g}</option>`).join('')}
+      </select>
+    </div>
+    <div><label>Exercício</label>
+      <select id="extraExNome" onchange="toggleExtraExOutro()"><option value="">Selecione o grupo primeiro</option></select>
+    </div>
+  </div>
+  <input type="text" id="extraExOutro" placeholder="Nome do exercício..." style="display:none; margin-top:6px;">
+  <button class="chip primary" style="margin-top:8px;" onclick="addExtraExercise()">+ Adicionar exercício extra</button>
+  </div>`;
   return h;
 }
+function fillExtraExOptions(){
+  const grupo = document.getElementById('extraExGrupo').value;
+  const sel = document.getElementById('extraExNome');
+  const opts = PLAN.bancoExercicios[grupo] || [];
+  sel.innerHTML = '<option value="">Selecione...</option>'
+    + opts.map(o=>`<option value="${o}">${o}</option>`).join('')
+    + '<option value="__outro__">Outro (digitar nome)</option>';
+  document.getElementById('extraExOutro').style.display = 'none';
+}
+function toggleExtraExOutro(){
+  const sel = document.getElementById('extraExNome');
+  document.getElementById('extraExOutro').style.display = sel.value==='__outro__' ? 'block' : 'none';
+}
 function addExtraExercise(){
-  const input = document.getElementById('extraExNome');
-  const nome = input.value.trim();
+  const sel = document.getElementById('extraExNome');
+  let nome = sel ? sel.value : '';
+  if(nome==='__outro__') nome = document.getElementById('extraExOutro').value.trim();
   if(!nome) return;
   const log = getLog();
   log.extraExercises = log.extraExercises || [];
