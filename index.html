@@ -176,7 +176,9 @@
       <label>O que foi hoje?</label>
       <select id="workoutType" onchange="setWorkoutType(this.value)">
         <option value="">Selecione...</option>
-        <option value="treinoA">Treino A — Academia</option>
+        <option value="treinoA">Treino A — Pernas + Core</option>
+        <option value="treinoB">Treino B — Costas + Core</option>
+        <option value="treinoC">Treino C — Pernas (posterior/glúteo) + Core</option>
         <option value="corrida">Corrida / Esteira</option>
         <option value="treinoCasa">Treino Casa (Plano B)</option>
         <option value="descanso">Descanso</option>
@@ -231,12 +233,22 @@
     <div class="card">
       <h2>📅 Grade da semana</h2>
       <div id="planGrade"></div>
-      <p class="muted" style="margin-top:8px;">Se faltar academia no dia de Treino A → faça o Treino Casa no lugar. Se faltar corrida → Treino Casa ou descanso.</p>
+      <p class="muted" style="margin-top:8px;">Se faltar academia no dia de Treino A/B/C → faça o Treino Casa no lugar. Se faltar corrida → Treino Casa ou descanso.</p>
     </div>
     <div class="card">
-      <h2>🏋️ Treino A — Academia</h2>
-      <p class="muted">Foco: inferiores + costas + core, poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
+      <h2>🏋️ Treino A — Pernas + Core</h2>
+      <p class="muted">Foco quadríceps/posterior, poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
       <div id="planTreinoA"></div>
+    </div>
+    <div class="card">
+      <h2>🏋️ Treino B — Costas + Core</h2>
+      <p class="muted">Puxadas leves (pegada neutra/aberta), poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
+      <div id="planTreinoB"></div>
+    </div>
+    <div class="card">
+      <h2>🏋️ Treino C — Pernas (posterior/glúteo) + Core</h2>
+      <p class="muted">Variação do Treino A, foco posterior/glúteo. 3-5min de mobilidade lombar/pescoço no início.</p>
+      <div id="planTreinoC"></div>
     </div>
     <div class="card">
       <h2>🏃 Corrida / Esteira — Progressão</h2>
@@ -373,11 +385,11 @@ const PLAN = {
   ],
   grade: [
     { dia:'Domingo', tipo:'descanso', desc:'Descanso (opcional: Treino Casa - Plano B)' },
-    { dia:'Segunda', tipo:'treinoA', desc:'Treino A — Academia' },
+    { dia:'Segunda', tipo:'treinoA', desc:'Treino A — Pernas + Core' },
     { dia:'Terça', tipo:'corrida', desc:'Corrida/Esteira' },
-    { dia:'Quarta', tipo:'treinoA', desc:'Treino A — Academia' },
+    { dia:'Quarta', tipo:'treinoB', desc:'Treino B — Costas + Core' },
     { dia:'Quinta', tipo:'corrida', desc:'Corrida/Esteira' },
-    { dia:'Sexta', tipo:'treinoA', desc:'Treino A — Academia' },
+    { dia:'Sexta', tipo:'treinoC', desc:'Treino C — Pernas (posterior/glúteo) + Core' },
     { dia:'Sábado', tipo:'corrida', desc:'Corrida/Esteira' }
   ],
   treinoA: [
@@ -387,11 +399,34 @@ const PLAN = {
       alternativas:['Leg Press','Agachamento no Smith'] },
     { id:'flexora', nome:'Cadeira Flexora', series:3, reps:12,
       alternativas:['Stiff (carga leve)','Mesa Flexora Deitada'] },
-    { id:'remada', nome:'Remada Baixa Neutra / Puxada na Polia', series:3, reps:12,
-      alternativas:['Puxada Frontal Pegada Neutra','Remada Unilateral (halter leve)'],
-      obs:'Carga leve — poupar ombro sensível. Pare se incomodar.' },
+    { id:'abdutora', nome:'Cadeira Abdutora', series:3, reps:12,
+      alternativas:['Opcional, se a máquina estiver livre'] },
     { id:'core', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
       alternativas:['Abdominal Isométrico','Hip Thrust (carga leve)'] }
+  ],
+  treinoB: [
+    { id:'remadabaixa', nome:'Remada Baixa Neutra / Puxada na Polia', series:3, reps:12,
+      alternativas:['Puxada Frontal Pegada Neutra','Remada Unilateral (halter leve)'],
+      obs:'Pegada neutra, carga leve — poupar ombro sensível. Evitar puxada atrás da cabeça.' },
+    { id:'puxadafrontal', nome:'Puxada Frontal (pegada neutra/aberta)', series:3, reps:12,
+      alternativas:['Remada Baixa Neutra'],
+      obs:'Carga leve — poupar ombro sensível.' },
+    { id:'remadaunilateral', nome:'Remada Unilateral (halter ou polia, um braço por vez)', series:3, reps:'10 cada lado',
+      alternativas:['Remada Baixa Neutra'] },
+    { id:'coreb', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
+      alternativas:['Abdominal Isométrico'] }
+  ],
+  treinoC: [
+    { id:'flexorac', nome:'Cadeira Flexora (posterior)', series:3, reps:12,
+      alternativas:['Stiff (carga leve)','Mesa Flexora Deitada'] },
+    { id:'extensorac', nome:'Cadeira Extensora', series:3, reps:12,
+      alternativas:['Leg Press'] },
+    { id:'hipthrust', nome:'Elevação Pélvica / Hip Thrust (máquina ou chão)', series:3, reps:12,
+      alternativas:['Ponte de Glúteo'] },
+    { id:'panturrilha', nome:'Panturrilha (leg press ou em pé)', series:3, reps:15,
+      alternativas:[] },
+    { id:'corec', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
+      alternativas:['Abdominal Isométrico'] }
   ],
   corrida: [
     { fase:'Fase 1', desc:'Caminhada confortável, 15-20 min (sem correr ainda)' },
@@ -674,7 +709,7 @@ function exerciseRow(exId, exDef, storeObj, kind){
 function setSub(exId, kind, alt){
   const log = getLog();
   const store = kind==='carga' ? log.exercises : log.treinoCasa;
-  const exDef = (kind==='carga'?PLAN.treinoA:PLAN.treinoCasa).find(e=> (e.id||e.nome)===exId);
+  const exDef = (kind==='carga'?PLAN[log.workoutType]:PLAN.treinoCasa).find(e=> (e.id||e.nome)===exId);
   if(!store[exId]) store[exId] = { nome: exDef.nome, sub:'', sets:[] };
   store[exId].sub = alt;
   saveData(); renderWorkoutArea();
@@ -743,10 +778,10 @@ function renderWorkoutArea(){
   const log = getLog();
   document.getElementById('workoutType').value = log.workoutType || '';
   const area = document.getElementById('workoutArea');
-  if(log.workoutType==='treinoA'){
+  if(log.workoutType==='treinoA' || log.workoutType==='treinoB' || log.workoutType==='treinoC'){
     log.exercises = log.exercises || {};
     let h='';
-    PLAN.treinoA.forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
+    PLAN[log.workoutType].forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
     area.innerHTML = h;
   } else if(log.workoutType==='treinoCasa'){
     log.treinoCasa = log.treinoCasa || {};
@@ -1051,12 +1086,15 @@ function renderPlanRef(){
   document.getElementById('planGrade').innerHTML = PLAN.grade.map((g,i)=>`
     <div class="exercise ${i===hojeDia?'selected':''}"><div class="ex-title"><span>${g.dia}${i===hojeDia?' (hoje)':''}</span></div><div class="ex-meta">${g.desc}</div></div>`).join('');
 
-  document.getElementById('planTreinoA').innerHTML = PLAN.treinoA.map(ex=>`
+  const renderTreinoList = (list)=> list.map(ex=>`
     <div class="exercise">
       <div class="ex-title"><span>${ex.nome}</span><span class="muted">${ex.series}x${ex.reps}</span></div>
       ${ex.obs?`<div class="ex-obs">⚠️ ${ex.obs}</div>`:''}
-      ${ex.alternativas?`<div class="ex-meta">Alternativas: ${ex.alternativas.join(', ')}</div>`:''}
+      ${ex.alternativas && ex.alternativas.length?`<div class="ex-meta">Alternativas: ${ex.alternativas.join(', ')}</div>`:''}
     </div>`).join('');
+  document.getElementById('planTreinoA').innerHTML = renderTreinoList(PLAN.treinoA);
+  document.getElementById('planTreinoB').innerHTML = renderTreinoList(PLAN.treinoB);
+  document.getElementById('planTreinoC').innerHTML = renderTreinoList(PLAN.treinoC);
 
   document.getElementById('planCorrida').innerHTML = PLAN.corrida.map(f=>`
     <div class="exercise"><div class="ex-title"><span>${f.fase}</span></div><div class="ex-meta">${f.desc}</div></div>`).join('')
@@ -1181,7 +1219,8 @@ function renderChartSono(){
 
 function fillExerciseSelect(){
   const sel = document.getElementById('exSelect');
-  sel.innerHTML = PLAN.treinoA.filter(e=>e.series && typeof e.reps==='number'? true: e.series).map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  const all = PLAN.treinoA.concat(PLAN.treinoB, PLAN.treinoC);
+  sel.innerHTML = all.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
 }
 
 function renderChartCargas(){
