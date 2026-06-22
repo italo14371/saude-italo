@@ -1337,6 +1337,8 @@ function renderCorridaTimer(){
     ${corridaRun.phase!=='fim' ? `<div class="rest-actions" style="margin-top:6px; justify-content:center; flex-wrap:wrap;">
       <button onclick="adjustCorridaPhaseTime(15)">+15s nesta etapa</button>
       <button onclick="adjustCorridaPhaseTime(-15)">-15s nesta etapa</button>
+    </div>
+    <div class="rest-actions" style="margin-top:6px; justify-content:center;">
       <button onclick="addCorridaBlock()">+1 bloco</button>
       <button onclick="removeCorridaBlock()">-1 bloco</button>
     </div>
