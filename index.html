@@ -1302,9 +1302,11 @@ function renderCorridaTimer(){
     <div class="rest-actions" style="margin-top:8px; justify-content:center; flex-wrap:wrap;">
       ${corridaRun.phase==='fim' ? `<button onclick="resetCorridaTimer()">Novo treino</button>` : `
         <button onclick="prevCorridaPhase()">⏮ Etapa anterior</button>
-        ${corridaRun.running ? `<button onclick="pauseCorridaTimer()">⏸ Pausar</button>` : `<button onclick="resumeCorridaTimer()">▶ Retomar</button>`}
         <button onclick="nextCorridaPhase()">⏭ Próxima etapa</button>`}
     </div>
+    ${corridaRun.phase!=='fim' ? `<div class="rest-actions" style="margin-top:6px; justify-content:center;">
+      ${corridaRun.running ? `<button onclick="pauseCorridaTimer()">⏸ Pausar</button>` : `<button onclick="resumeCorridaTimer()">▶ Retomar</button>`}
+    </div>` : ''}
     ${corridaRun.phase!=='fim' ? `<div class="rest-actions" style="margin-top:6px; justify-content:center; flex-wrap:wrap;">
       <button onclick="adjustCorridaPhaseTime(15)">+15s nesta etapa</button>
       <button onclick="adjustCorridaPhaseTime(-15)">-15s nesta etapa</button>
