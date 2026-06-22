@@ -44,6 +44,10 @@
   label{font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
   .row{display:flex; gap:8px;}
   .row > *{flex:1; min-width:0;}
+  @media (max-width:420px){
+    .row{flex-direction:column;}
+    .row > *{width:100%;}
+  }
 
   .exercise{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px; background:var(--card2);}
   .exercise .ex-title{font-weight:600; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:6px;}
@@ -1173,7 +1177,7 @@ function corridaTick(){
   if(!corridaRun) return;
   corridaRun.totalSec++;
   corridaRun.phaseTime--;
-  if(corridaRun.phaseTime===5 && corridaRun.phase!=='fim') beep(660,200);
+  if(corridaRun.phaseTime>=1 && corridaRun.phaseTime<=5 && corridaRun.phase!=='fim') beep(660,120);
   if(corridaRun.phaseTime<=0) advanceCorridaPhase();
   renderCorridaTimer();
 }
