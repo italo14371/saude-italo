@@ -68,12 +68,27 @@
   .rest-bar.done{background:rgba(56,189,248,.12); border-color:var(--accent2);}
   .rest-bar.done .rest-time{color:var(--accent2);}
 
-  .corrida-timer{text-align:center; padding:12px; border-radius:10px; background:var(--card2); border:1px solid var(--border);}
-  .corrida-timer.trote{border-color:var(--danger); background:rgba(248,113,113,.10);}
+  .corrida-timer{text-align:center; padding:12px; border-radius:10px; background:var(--card2); border:2px solid var(--border); transition:border-color .3s, background .3s;}
+  .corrida-timer.aquecimento{border-color:#fbbf24; background:rgba(251,191,36,.10);}
+  .corrida-timer.trote{border-color:var(--danger); background:rgba(248,113,113,.12);}
   .corrida-timer.caminhada{border-color:var(--accent2); background:rgba(56,189,248,.10);}
-  .corrida-timer .ct-phase{font-weight:700; font-size:14px; margin-bottom:4px;}
-  .corrida-timer .ct-time{font-size:32px; font-weight:700;}
-  .corrida-timer .ct-total{font-size:12px; margin-top:4px;}
+  .corrida-timer.desaceleracao{border-color:#a78bfa; background:rgba(167,139,250,.10);}
+  .corrida-timer.fim{border-color:var(--accent); background:rgba(74,222,128,.15);}
+  .corrida-timer .ct-phase{font-weight:700; font-size:15px; margin-bottom:4px;}
+  .corrida-timer .ct-time{font-size:38px; font-weight:700; animation:ct-pulse 1s ease-in-out infinite;}
+  .corrida-timer.trote .ct-time{color:var(--danger);}
+  .corrida-timer.caminhada .ct-time{color:var(--accent2);}
+  .corrida-timer.aquecimento .ct-time{color:#fbbf24;}
+  .corrida-timer.desaceleracao .ct-time{color:#a78bfa;}
+  .corrida-timer .ct-vel{font-size:13px; font-weight:600; margin-top:2px;}
+  .corrida-timer .ct-phasebar{height:6px; border-radius:3px; background:var(--border); margin:8px 0 0; overflow:hidden;}
+  .corrida-timer .ct-phasebar-fill{height:100%; background:var(--text); opacity:.6; border-radius:3px; transition:width 1s linear;}
+  .corrida-timer.trote .ct-phasebar-fill{background:var(--danger);}
+  .corrida-timer.caminhada .ct-phasebar-fill{background:var(--accent2);}
+  .corrida-timer.aquecimento .ct-phasebar-fill{background:#fbbf24;}
+  .corrida-timer.desaceleracao .ct-phasebar-fill{background:#a78bfa;}
+  .corrida-timer .ct-total{font-size:12px; margin-top:8px; opacity:.8;}
+  @keyframes ct-pulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.03);}}
 
   .meal{margin-bottom:14px;}
   .meal-title{font-weight:600; font-size:14px; margin-bottom:6px;}
@@ -287,6 +302,10 @@
     <div class="card">
       <h2>🏆 Recordes</h2>
       <div id="cardioRecords"></div>
+    </div>
+    <div class="card">
+      <h2>📊 Esta semana vs semana passada</h2>
+      <div id="cardioWeekSummary"></div>
     </div>
     <div class="card">
       <h2>📈 Progressão planejada</h2>
@@ -904,8 +923,9 @@ function setCorridaField(field, val){
 }
 
 /* ====================== TAB CARDIO (gamificado) ====================== */
-function weekDatesRange(){
-  const now = new Date();
+function weekDatesRange(weeksAgo){
+  weeksAgo = weeksAgo || 0;
+  const now = new Date(); now.setDate(now.getDate()-7*weeksAgo);
   const day = now.getDay();
   const diffToMonday = (day===0 ? -6 : 1-day);
   const monday = new Date(now); monday.setDate(now.getDate()+diffToMonday);
@@ -915,6 +935,34 @@ function weekDatesRange(){
     dates.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
   }
   return dates;
+}
+function cardioWeekStats(weeksAgo){
+  const dates = weekDatesRange(weeksAgo);
+  let sessions=0, km=0, kcal=0, tempo=0;
+  dates.forEach(dk=>{
+    const log = DATA.logs[dk];
+    if(log && log.workoutType==='corrida' && log.corrida){
+      sessions++;
+      km += Math.max(parseFloat(log.corrida.kmRelogio)||0, parseFloat(log.corrida.kmMaquina)||0);
+      kcal += Math.max(parseFloat(log.corrida.kcalRelogio)||0, parseFloat(log.corrida.kcalMaquina)||0);
+      tempo += parseFloat(log.corrida.tempo)||0;
+    }
+  });
+  return { sessions, km, kcal, tempo };
+}
+function cardioWeekSummaryHtml(){
+  const atual = cardioWeekStats(0);
+  const passada = cardioWeekStats(1);
+  return `<div class="stat-grid">
+      <div class="stat"><div class="v">${atual.sessions}</div><div class="l">sessões — esta semana</div></div>
+      <div class="stat"><div class="v">${passada.sessions}</div><div class="l">sessões — semana passada</div></div>
+      <div class="stat"><div class="v">${atual.km.toFixed(1)}km</div><div class="l">km — esta semana</div></div>
+      <div class="stat"><div class="v">${passada.km.toFixed(1)}km</div><div class="l">km — semana passada</div></div>
+      <div class="stat"><div class="v">${atual.kcal.toFixed(0)}</div><div class="l">kcal — esta semana</div></div>
+      <div class="stat"><div class="v">${passada.kcal.toFixed(0)}</div><div class="l">kcal — semana passada</div></div>
+      <div class="stat"><div class="v">${atual.tempo.toFixed(0)}min</div><div class="l">tempo — esta semana</div></div>
+      <div class="stat"><div class="v">${passada.tempo.toFixed(0)}min</div><div class="l">tempo — semana passada</div></div>
+    </div>`;
 }
 function cardioGameBarHtml(){
   const target = PLAN.grade.filter(g=>g.tipo==='corrida').length;
@@ -956,6 +1004,8 @@ function renderCardioTab(){
   if(!gameBarEl || !recordsEl || !startArea) return;
   gameBarEl.innerHTML = cardioGameBarHtml();
   recordsEl.innerHTML = cardioRecordsHtml();
+  const weekSummaryEl = document.getElementById('cardioWeekSummary');
+  if(weekSummaryEl) weekSummaryEl.innerHTML = cardioWeekSummaryHtml();
   const log = getLog();
   if(log.workoutType !== 'corrida'){
     startArea.innerHTML = `<p class="muted">Hoje seu treino registrado é "${workoutTypeLabel(log.workoutType)}".</p>
@@ -995,13 +1045,31 @@ function renderCardioTab(){
     </div>
     <div class="exercise" style="margin-top:10px;">
       <div class="ex-title"><span>⏱ Timer intervalado (trote/caminhada)</span></div>
+      <p class="muted" style="margin-top:4px;">Tudo editável antes ou durante o treino — inclusive a velocidade de cada etapa.</p>
       <div class="row" style="margin-top:8px;">
         <div><label>Aquecimento (min)</label><input type="number" value="${cfg.aquecimento/60}" onchange="setCorridaConfig('aquecimento', this.value*60)"></div>
+        <div><label>Vel. aquecimento (km/h)</label><input type="number" step="0.5" value="${cfg.aquecimentoVel}" onchange="setCorridaConfig('aquecimentoVel', this.value)"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
         <div><label>Trote (s)</label><input type="number" value="${cfg.trote}" onchange="setCorridaConfig('trote', this.value)"></div>
+        <div><label>Vel. trote (km/h)</label><input type="number" step="0.5" value="${cfg.troteVel}" onchange="setCorridaConfig('troteVel', this.value)"></div>
       </div>
       <div class="row" style="margin-top:6px;">
         <div><label>Caminhada (s)</label><input type="number" value="${cfg.caminhada}" onchange="setCorridaConfig('caminhada', this.value)"></div>
+        <div><label>Vel. caminhada (km/h)</label><input type="number" step="0.5" value="${cfg.caminhadaVel}" onchange="setCorridaConfig('caminhadaVel', this.value)"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
         <div><label>Blocos</label><input type="number" value="${cfg.blocos}" onchange="setCorridaConfig('blocos', this.value)"></div>
+        <div><label>Desaceleração (min)</label><input type="number" value="${cfg.desaceleracao/60}" onchange="setCorridaConfig('desaceleracao', this.value*60)"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div><label>Vel. desaceleração (km/h)</label><input type="number" step="0.5" value="${cfg.desaceleracaoVel}" onchange="setCorridaConfig('desaceleracaoVel', this.value)"></div>
+        <div><label>Som/voz do treinador</label>
+          <select onchange="setCorridaConfig('vozAtiva', this.value)">
+            <option value="1" ${cfg.vozAtiva!=='0'?'selected':''}>Ativado</option>
+            <option value="0" ${cfg.vozAtiva==='0'?'selected':''}>Só beep (sem voz)</option>
+          </select>
+        </div>
       </div>
       <div id="corridaTimerBox" style="margin-top:10px;"></div>
     </div>
@@ -1012,41 +1080,132 @@ function renderCardioTab(){
 
 /* ====================== TIMER INTERVALADO DE CORRIDA ====================== */
 function corridaConfig(){
-  if(!DATA.settings.corridaConfig) DATA.settings.corridaConfig = { aquecimento:300, trote:45, caminhada:90, blocos:6 };
-  return DATA.settings.corridaConfig;
+  if(!DATA.settings.corridaConfig) DATA.settings.corridaConfig = {};
+  const cfg = DATA.settings.corridaConfig;
+  const defaults = { aquecimento:300, aquecimentoVel:5.5, trote:45, troteVel:9, caminhada:90, caminhadaVel:5.5, blocos:6, desaceleracao:300, desaceleracaoVel:4, vozAtiva:'1' };
+  Object.keys(defaults).forEach(k=>{ if(cfg[k]===undefined) cfg[k]=defaults[k]; });
+  return cfg;
 }
 function setCorridaConfig(field, val){
   const cfg = corridaConfig();
-  cfg[field] = Math.max(0, parseInt(val)||0);
+  if(field==='vozAtiva'){ cfg.vozAtiva = val; }
+  else if(field==='aquecimentoVel' || field==='troteVel' || field==='caminhadaVel' || field==='desaceleracaoVel'){ cfg[field] = Math.max(0, parseFloat(val)||0); }
+  else { cfg[field] = Math.max(0, parseInt(val)||0); }
   saveData();
+  if(corridaRun) renderCorridaTimer();
 }
+
+/* --- Beep e voz do treinador --- */
+let audioCtx = null;
+function beep(freq, duration){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.value = 0.18;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration/1000);
+  }catch(e){}
+}
+function speak(text){
+  try{
+    const cfg = corridaConfig();
+    if(cfg.vozAtiva==='0') return;
+    if(!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'pt-BR'; u.rate = 1.05; u.pitch = 1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function announceBlockStart(){
+  const total = corridaRun.blocosTarget;
+  const idx = corridaRun.blockIdx;
+  if(idx===total) speak('Último bloco! Segue firme!');
+  else if(idx===Math.ceil(total/2)) speak('Metade da prova! Segue firme!');
+  else if(idx===1) speak('Primeiro bloco de trote. Vamos!');
+  else speak(`Bloco ${idx} de ${total}.`);
+}
+
 let corridaRun = null;
 let corridaRunInterval = null;
 function startCorridaTimer(){
   const cfg = corridaConfig();
-  corridaRun = { phase:'aquecimento', phaseTime:cfg.aquecimento, blockIdx:0, totalSec:0, running:true };
+  corridaRun = { phase:'aquecimento', phaseTime:cfg.aquecimento, phaseTotal:cfg.aquecimento, blockIdx:0, blocosTarget:cfg.blocos, totalSec:0, running:true };
   if(corridaRunInterval) clearInterval(corridaRunInterval);
   corridaRunInterval = setInterval(corridaTick, 1000);
+  beep(880,150);
+  speak('Aquecimento. Vamos começar!');
   renderCorridaTimer();
 }
 function corridaTick(){
   if(!corridaRun) return;
   corridaRun.totalSec++;
   corridaRun.phaseTime--;
+  if(corridaRun.phaseTime===5 && corridaRun.phase!=='fim') beep(660,200);
   if(corridaRun.phaseTime<=0) advanceCorridaPhase();
   renderCorridaTimer();
 }
 function advanceCorridaPhase(){
   const cfg = corridaConfig();
+  beep(880,150);
   if(navigator.vibrate) navigator.vibrate(200);
   if(corridaRun.phase==='aquecimento'){
-    corridaRun.phase='trote'; corridaRun.blockIdx=1; corridaRun.phaseTime=cfg.trote;
+    corridaRun.phase='trote'; corridaRun.blockIdx=1; corridaRun.phaseTime=cfg.trote; corridaRun.phaseTotal=cfg.trote;
+    announceBlockStart();
   } else if(corridaRun.phase==='trote'){
-    corridaRun.phase='caminhada'; corridaRun.phaseTime=cfg.caminhada;
+    corridaRun.phase='caminhada'; corridaRun.phaseTime=cfg.caminhada; corridaRun.phaseTotal=cfg.caminhada;
+    speak('Recuperação. Respira.');
   } else if(corridaRun.phase==='caminhada'){
-    if(corridaRun.blockIdx>=cfg.blocos){ finishCorridaTimer(); return; }
-    corridaRun.blockIdx++; corridaRun.phase='trote'; corridaRun.phaseTime=cfg.trote;
+    if(corridaRun.blockIdx>=corridaRun.blocosTarget){
+      corridaRun.phase='desaceleracao'; corridaRun.phaseTime=cfg.desaceleracao; corridaRun.phaseTotal=cfg.desaceleracao;
+      speak('Desaceleração. Quase lá, segue tranquilo!');
+    } else {
+      corridaRun.blockIdx++; corridaRun.phase='trote'; corridaRun.phaseTime=cfg.trote; corridaRun.phaseTotal=cfg.trote;
+      announceBlockStart();
+    }
+  } else if(corridaRun.phase==='desaceleracao'){
+    finishCorridaTimer(); return;
   }
+}
+function nextCorridaPhase(){
+  if(!corridaRun || corridaRun.phase==='fim') return;
+  advanceCorridaPhase();
+  renderCorridaTimer();
+}
+function prevCorridaPhase(){
+  if(!corridaRun || corridaRun.phase==='fim') return;
+  const cfg = corridaConfig();
+  if(corridaRun.phase==='trote'){
+    if(corridaRun.blockIdx<=1){ corridaRun.phase='aquecimento'; corridaRun.phaseTime=cfg.aquecimento; corridaRun.phaseTotal=cfg.aquecimento; }
+    else { corridaRun.blockIdx--; corridaRun.phase='caminhada'; corridaRun.phaseTime=cfg.caminhada; corridaRun.phaseTotal=cfg.caminhada; }
+  } else if(corridaRun.phase==='caminhada'){
+    corridaRun.phase='trote'; corridaRun.phaseTime=cfg.trote; corridaRun.phaseTotal=cfg.trote;
+  } else if(corridaRun.phase==='desaceleracao'){
+    corridaRun.phase='caminhada'; corridaRun.phaseTime=cfg.caminhada; corridaRun.phaseTotal=cfg.caminhada;
+  } else if(corridaRun.phase==='aquecimento'){
+    corridaRun.phaseTime = cfg.aquecimento;
+  }
+  renderCorridaTimer();
+}
+function adjustCorridaPhaseTime(delta){
+  if(!corridaRun) return;
+  corridaRun.phaseTime = Math.max(0, corridaRun.phaseTime+delta);
+  renderCorridaTimer();
+}
+function addCorridaBlock(){
+  if(!corridaRun) return;
+  corridaRun.blocosTarget++;
+  speak('Mais um bloco adicionado. Bora!');
+  renderCorridaTimer();
+}
+function removeCorridaBlock(){
+  if(!corridaRun) return;
+  corridaRun.blocosTarget = Math.max(corridaRun.blockIdx, corridaRun.blocosTarget-1);
+  renderCorridaTimer();
 }
 function pauseCorridaTimer(){
   if(corridaRunInterval){ clearInterval(corridaRunInterval); corridaRunInterval=null; }
@@ -1068,6 +1227,8 @@ function finishCorridaTimer(){
   if(corridaRunInterval) clearInterval(corridaRunInterval);
   corridaRunInterval=null;
   if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+  beep(660,150); setTimeout(()=>beep(880,150),180); setTimeout(()=>beep(1100,250),360);
+  speak('Treino concluído! Parabéns, mandou bem!');
   const log = getLog();
   log.corrida = log.corrida || {};
   log.corrida.modo = 'Intervalado';
@@ -1090,20 +1251,34 @@ function renderCorridaTimer(){
   const ss = String(Math.max(0,corridaRun.phaseTime)%60).padStart(2,'0');
   const totalMin = String(Math.floor(corridaRun.totalSec/60)).padStart(2,'0');
   const totalSecRest = String(corridaRun.totalSec%60).padStart(2,'0');
-  let phaseLabel, phaseClass='';
-  if(corridaRun.phase==='aquecimento'){ phaseLabel='Aquecimento'; }
-  else if(corridaRun.phase==='trote'){ phaseLabel=`🏃 Trote (bloco ${corridaRun.blockIdx}/${cfg.blocos})`; phaseClass='trote'; }
-  else if(corridaRun.phase==='caminhada'){ phaseLabel=`🚶 Caminhada (bloco ${corridaRun.blockIdx}/${cfg.blocos})`; phaseClass='caminhada'; }
-  else { phaseLabel='Treino concluído! 🎉'; }
+  let phaseLabel, phaseClass='', vel=0;
+  if(corridaRun.phase==='aquecimento'){ phaseLabel='🔥 Aquecimento'; phaseClass='aquecimento'; vel=cfg.aquecimentoVel; }
+  else if(corridaRun.phase==='trote'){ phaseLabel=`🏃 Trote (bloco ${corridaRun.blockIdx}/${corridaRun.blocosTarget})`; phaseClass='trote'; vel=cfg.troteVel; }
+  else if(corridaRun.phase==='caminhada'){ phaseLabel=`🚶 Caminhada (bloco ${corridaRun.blockIdx}/${corridaRun.blocosTarget})`; phaseClass='caminhada'; vel=cfg.caminhadaVel; }
+  else if(corridaRun.phase==='desaceleracao'){ phaseLabel='🧊 Desaceleração'; phaseClass='desaceleracao'; vel=cfg.desaceleracaoVel; }
+  else { phaseLabel='Treino concluído! 🎉'; phaseClass='fim'; }
+  const pct = corridaRun.phaseTotal>0 ? Math.min(100, Math.round((1-corridaRun.phaseTime/corridaRun.phaseTotal)*100)) : 0;
   box.innerHTML = `<div class="corrida-timer ${phaseClass}">
     <div class="ct-phase">${phaseLabel}</div>
-    ${corridaRun.phase!=='fim' ? `<div class="ct-time">${mm}:${ss}</div>` : ''}
-    <div class="ct-total muted">Total: ${totalMin}:${totalSecRest}</div>
-    <div class="rest-actions" style="margin-top:8px; justify-content:center;">
-      ${corridaRun.phase==='fim' ? `<button onclick="resetCorridaTimer()">Novo treino</button>` :
-        corridaRun.running ? `<button onclick="pauseCorridaTimer()">⏸ Pausar</button>` : `<button onclick="resumeCorridaTimer()">▶ Retomar</button>`}
-      ${corridaRun.phase!=='fim' ? `<button onclick="resetCorridaTimer()">Cancelar</button>` : ''}
+    ${corridaRun.phase!=='fim' ? `<div class="ct-time">${mm}:${ss}</div><div class="ct-vel">🚀 ${vel} km/h</div>
+      <div class="ct-phasebar"><div class="ct-phasebar-fill" style="width:${pct}%"></div></div>` : ''}
+    <div class="ct-total muted">Total do treino: ${totalMin}:${totalSecRest}</div>
+    <div class="rest-actions" style="margin-top:8px; justify-content:center; flex-wrap:wrap;">
+      ${corridaRun.phase==='fim' ? `<button onclick="resetCorridaTimer()">Novo treino</button>` : `
+        <button onclick="prevCorridaPhase()">⏮ Etapa anterior</button>
+        ${corridaRun.running ? `<button onclick="pauseCorridaTimer()">⏸ Pausar</button>` : `<button onclick="resumeCorridaTimer()">▶ Retomar</button>`}
+        <button onclick="nextCorridaPhase()">⏭ Próxima etapa</button>`}
     </div>
+    ${corridaRun.phase!=='fim' ? `<div class="rest-actions" style="margin-top:6px; justify-content:center; flex-wrap:wrap;">
+      <button onclick="adjustCorridaPhaseTime(15)">+15s nesta etapa</button>
+      <button onclick="adjustCorridaPhaseTime(-15)">-15s nesta etapa</button>
+      <button onclick="addCorridaBlock()">+1 bloco</button>
+      <button onclick="removeCorridaBlock()">-1 bloco</button>
+    </div>
+    <div class="rest-actions" style="margin-top:6px; justify-content:center;">
+      <button onclick="finishCorridaTimer()">🏁 Concluir treino agora</button>
+      <button onclick="resetCorridaTimer()">Cancelar</button>
+    </div>` : ''}
   </div>`;
 }
 
