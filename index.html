@@ -300,6 +300,10 @@
       <h2>🏃 Cardio</h2>
       <div id="cardioGameBar"></div>
     </div>
+    <div class="card" id="cardioChallengeCard" style="display:none;">
+      <h2>🔥 Desafio do dia</h2>
+      <div id="cardioChallenge"></div>
+    </div>
     <div class="card">
       <div id="cardioStartArea"></div>
     </div>
@@ -974,6 +978,28 @@ function cardioWeekSummaryHtml(){
       <div class="stat"><div class="v">${passada.tempo.toFixed(0)}min</div><div class="l">tempo — semana passada</div></div>
     </div>`;
 }
+function isLastCardioOfWeek(){
+  const idxs = PLAN.grade.map((g,i)=>g.tipo==='corrida'?i:-1).filter(i=>i>=0);
+  if(!idxs.length) return false;
+  return new Date().getDay() === Math.max(...idxs);
+}
+function getISOWeekNumber(d){
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getDate() + 4 - (d.getUTCDay()||7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d-yearStart)/86400000)+1)/7);
+}
+function cardioChallengeToday(){
+  const week = getISOWeekNumber(new Date());
+  const cfg = corridaConfig();
+  const tipos = [
+    { id:'bloco', texto:`Tenta fazer +1 bloco do que o seu padrão hoje (${cfg.blocos+1} no total, em vez de ${cfg.blocos}).` },
+    { id:'velTrote', texto:`Tenta o trote ${(cfg.troteVel+0.5).toFixed(1)} km/h hoje, 0.5 km/h mais rápido que o normal (${cfg.troteVel} km/h).` },
+    { id:'recCaminhada', texto:`Tenta encurtar a caminhada de recuperação em 15s hoje (de ${cfg.caminhada}s pra ${Math.max(15,cfg.caminhada-15)}s).` },
+    { id:'inclinacao', texto:`Tenta adicionar 1% de inclinação no trote hoje (preencha o campo "Inclinação" abaixo).` }
+  ];
+  return tipos[week % tipos.length];
+}
 function cardioGameBarHtml(){
   const target = PLAN.grade.filter(g=>g.tipo==='corrida').length;
   const week = weekDatesRange();
@@ -1016,6 +1042,17 @@ function renderCardioTab(){
   recordsEl.innerHTML = cardioRecordsHtml();
   const weekSummaryEl = document.getElementById('cardioWeekSummary');
   if(weekSummaryEl) weekSummaryEl.innerHTML = cardioWeekSummaryHtml();
+  const challengeCard = document.getElementById('cardioChallengeCard');
+  const challengeEl = document.getElementById('cardioChallenge');
+  if(challengeCard && challengeEl){
+    if(isLastCardioOfWeek()){
+      challengeCard.style.display = 'block';
+      const desafio = cardioChallengeToday();
+      challengeEl.innerHTML = `<p>${desafio.texto}</p><p class="muted" style="margin-top:6px;">Último cardio da semana — topa se desafiar um pouco hoje? Totalmente opcional, sem culpa se preferir manter o padrão.</p>`;
+    } else {
+      challengeCard.style.display = 'none';
+    }
+  }
   const log = getLog();
   if(log.workoutType !== 'corrida'){
     startArea.innerHTML = `<p class="muted">Hoje seu treino registrado é "${workoutTypeLabel(log.workoutType)}".</p>
