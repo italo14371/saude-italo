@@ -228,6 +228,7 @@
   <section class="tab" id="tab-treino">
     <div class="card">
       <h2>✅ Registrar treino de hoje</h2>
+      <div id="treinoProgressBar"></div>
       <div id="restTimerBar" class="rest-bar" style="display:none;"></div>
       <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
       <label>O que foi hoje?</label>
@@ -236,7 +237,7 @@
         <option value="treinoA">Treino A — Pernas + Core</option>
         <option value="treinoB">Treino B — Costas + Core</option>
         <option value="treinoC">Treino C — Pernas (posterior/glúteo) + Core</option>
-        <option value="corrida">Corrida / Esteira</option>
+        <option value="corrida">Cardio (Esteira/Bike/Escada)</option>
         <option value="treinoCasa">Treino Casa (Plano B)</option>
         <option value="descanso">Descanso</option>
       </select>
@@ -263,13 +264,28 @@
       <div id="planTreinoC"></div>
     </div>
     <div class="card">
-      <h2>🏃 Corrida / Esteira — Progressão</h2>
-      <div id="planCorrida"></div>
-    </div>
-    <div class="card">
       <h2>🏠 Treino Casa (Plano B)</h2>
       <p class="muted">Calistenia leve, sem equipamento, mesmo foco em core/lombar/pescoço, poupando o ombro.</p>
       <div id="planCasa"></div>
+    </div>
+  </section>
+
+  <!-- TAB: CARDIO -->
+  <section class="tab" id="tab-cardio">
+    <div class="card">
+      <h2>🏃 Cardio</h2>
+      <div id="cardioGameBar"></div>
+    </div>
+    <div class="card">
+      <div id="cardioStartArea"></div>
+    </div>
+    <div class="card">
+      <h2>🏆 Recordes</h2>
+      <div id="cardioRecords"></div>
+    </div>
+    <div class="card">
+      <h2>📈 Progressão planejada</h2>
+      <div id="planCorrida"></div>
     </div>
   </section>
 
@@ -377,6 +393,7 @@
 <nav class="bottom">
   <button class="active" data-tab="hoje" onclick="switchTab('hoje')"><span class="icon">📋</span>Hoje</button>
   <button data-tab="treino" onclick="switchTab('treino')"><span class="icon">🏋️</span>Treino</button>
+  <button data-tab="cardio" onclick="switchTab('cardio')"><span class="icon">🏃</span>Cardio</button>
   <button data-tab="dieta" onclick="switchTab('dieta')"><span class="icon">🍽️</span>Dieta</button>
   <button data-tab="painel" onclick="switchTab('painel')"><span class="icon">📊</span>Painel</button>
 </nav>
@@ -592,6 +609,7 @@ function switchTab(name){
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelector('nav.bottom button[data-tab="'+name+'"]').classList.add('active');
   if(name==='painel') renderPainel();
+  if(name==='cardio') renderCardioTab();
 }
 
 /* ====================== HOJE: ÁGUA ====================== */
@@ -677,10 +695,24 @@ function setWorkoutType(type){
   saveData();
   renderWorkoutArea();
   renderTreinoResumoHoje();
+  renderCardioTab();
+}
+function workoutTypeLabel(type){
+  const map = { treinoA:'Treino A — Pernas + Core', treinoB:'Treino B — Costas + Core', treinoC:'Treino C — Pernas (posterior/glúteo) + Core', treinoCasa:'Treino Casa (Plano B)', corrida:'Cardio', descanso:'Descanso' };
+  return map[type] || 'nenhum ainda';
 }
 
 function defaultSet(exDef){
   return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false };
+}
+function maxPesoForExercise(exId){
+  let max = 0;
+  Object.values(DATA.logs).forEach(log=>{
+    const data = log.exercises && log.exercises[exId];
+    if(!data) return;
+    data.sets.forEach(s=>{ const p = parseFloat(s.peso)||0; if(p>max) max=p; });
+  });
+  return max;
 }
 function exerciseRow(exId, exDef, storeObj, kind){
   // kind: 'carga' (sets com peso/reps) ou 'casa' (checklist)
@@ -699,14 +731,18 @@ function exerciseRow(exId, exDef, storeObj, kind){
   }
   if(kind==='carga'){
     const n = exDef.series;
+    const pr = maxPesoForExercise(exId);
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
       const s = data.sets[i] || defaultSet(exDef);
+      const peso = parseFloat(s.peso)||0;
+      const isPR = peso>0 && pr>0 && peso>=pr;
       html += `<div class="set-row">
         <div class="set-idx">${i+1}</div>
         <input type="number" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
         <input type="number" placeholder="reps" value="${s.reps}" oninput="setSetField('${exId}','${kind}',${i},'reps',this.value)">
         <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',${i})">${s.done?'✓':''}</div>
+        ${isPR ? `<span title="Novo recorde pessoal!" style="font-size:16px;">🏆</span>` : ''}
       </div>`;
     }
     html += `</div>`;
@@ -791,65 +827,46 @@ function renderRestTimer(){
     </div>`;
 }
 
+function treinoSessionStats(type, log){
+  const list = PLAN[type] || [];
+  let totalSets=0, doneSets=0, totalKg=0;
+  list.forEach(ex=>{
+    const data = (log.exercises||{})[ex.id];
+    for(let i=0;i<ex.series;i++){
+      totalSets++;
+      const s = data && data.sets[i];
+      if(s && s.done){ doneSets++; if(s.peso) totalKg += parseFloat(s.peso)||0; }
+    }
+  });
+  return { totalSets, doneSets, totalKg };
+}
 function renderWorkoutArea(){
   const log = getLog();
   document.getElementById('workoutType').value = log.workoutType || '';
   const area = document.getElementById('workoutArea');
+  const progressEl = document.getElementById('treinoProgressBar');
+  progressEl.innerHTML = '';
   if(log.workoutType==='treinoA' || log.workoutType==='treinoB' || log.workoutType==='treinoC'){
     log.exercises = log.exercises || {};
     let h='';
     PLAN[log.workoutType].forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
     area.innerHTML = h;
+    const stats = treinoSessionStats(log.workoutType, log);
+    const pct = stats.totalSets>0 ? Math.round(stats.doneSets/stats.totalSets*100) : 0;
+    progressEl.innerHTML = `<div class="daily-total" style="margin-bottom:10px;">
+      <div class="dt-kcal" style="font-size:18px;">💪 ${stats.doneSets}/${stats.totalSets} <span class="dt-meta">séries concluídas</span></div>
+      <div class="dt-bar"><div class="dt-bar-fill" style="width:${pct}%"></div></div>
+      <div class="dt-status">${pct>=100?'Treino completo! 🎉':pct+'% feito'}</div>
+      <div class="dt-macros">Carga total levantada: ${stats.totalKg.toFixed(0)} kg somados</div>
+    </div>`;
   } else if(log.workoutType==='treinoCasa'){
     log.treinoCasa = log.treinoCasa || {};
     let h='';
     PLAN.treinoCasa.forEach((ex,i)=> h += exerciseRow('casa'+i, ex, log.treinoCasa, 'casa'));
     area.innerHTML = h;
   } else if(log.workoutType==='corrida'){
-    log.corrida = log.corrida || {};
-    const c = log.corrida;
-    const cfg = corridaConfig();
-    area.innerHTML = `
-      <label>Equipamento</label>
-      <select onchange="setCorridaField('equipamento',this.value)">
-        <option value="">Selecione...</option>
-        <option value="Esteira" ${c.equipamento==='Esteira'?'selected':''}>Esteira</option>
-        <option value="Bicicleta" ${c.equipamento==='Bicicleta'?'selected':''}>Bicicleta</option>
-        <option value="Escada" ${c.equipamento==='Escada'?'selected':''}>Escada</option>
-      </select>
-      <label style="margin-top:8px;">Modo</label>
-      <select onchange="setCorridaField('modo',this.value)">
-        <option value="">Selecione...</option>
-        <option value="Caminhada" ${c.modo==='Caminhada'?'selected':''}>Caminhada</option>
-        <option value="Intervalado" ${c.modo==='Intervalado'?'selected':''}>Intervalado (trote/caminhada)</option>
-        <option value="Corrida" ${c.modo==='Corrida'?'selected':''}>Corrida contínua</option>
-      </select>
-      <div class="row" style="margin-top:8px;">
-        <div><label>Inclinação (%)</label><input type="number" step="0.5" value="${c.inclinacao||''}" oninput="setCorridaField('inclinacao',this.value)"></div>
-        <div><label>Tempo (min)</label><input type="number" value="${c.tempo||''}" oninput="setCorridaField('tempo',this.value)"></div>
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <div><label>Km — relógio</label><input type="number" step="0.01" value="${c.kmRelogio||''}" oninput="setCorridaField('kmRelogio',this.value)"></div>
-        <div><label>Km — esteira/bike/escada</label><input type="number" step="0.01" value="${c.kmMaquina||''}" oninput="setCorridaField('kmMaquina',this.value)"></div>
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <div><label>Kcal — relógio</label><input type="number" value="${c.kcalRelogio||''}" oninput="setCorridaField('kcalRelogio',this.value)"></div>
-        <div><label>Kcal — esteira/bike/escada</label><input type="number" value="${c.kcalMaquina||''}" oninput="setCorridaField('kcalMaquina',this.value)"></div>
-      </div>
-      <div class="exercise" style="margin-top:10px;">
-        <div class="ex-title"><span>⏱ Timer intervalado (trote/caminhada)</span></div>
-        <div class="row" style="margin-top:8px;">
-          <div><label>Aquecimento (min)</label><input type="number" value="${cfg.aquecimento/60}" onchange="setCorridaConfig('aquecimento', this.value*60)"></div>
-          <div><label>Trote (s)</label><input type="number" value="${cfg.trote}" onchange="setCorridaConfig('trote', this.value)"></div>
-        </div>
-        <div class="row" style="margin-top:6px;">
-          <div><label>Caminhada (s)</label><input type="number" value="${cfg.caminhada}" onchange="setCorridaConfig('caminhada', this.value)"></div>
-          <div><label>Blocos</label><input type="number" value="${cfg.blocos}" onchange="setCorridaConfig('blocos', this.value)"></div>
-        </div>
-        <div id="corridaTimerBox" style="margin-top:10px;"></div>
-      </div>
-      ${c.blocosFeitos ? `<p class="muted" style="margin-top:6px;">Último timer: ${c.blocosFeitos} bloco(s) de trote/caminhada concluídos.</p>` : ''}`;
-    renderCorridaTimer();
+    area.innerHTML = `<p class="muted">Hoje é dia de cardio 🏃 — acompanhe na aba dedicada.</p>
+      <button class="chip primary" onclick="switchTab('cardio')">Ir para aba Cardio →</button>`;
   } else if(log.workoutType==='descanso'){
     area.innerHTML = `<p class="muted">Dia de descanso — sem problema, descanso também é parte do plano.</p>`;
   } else {
@@ -861,6 +878,113 @@ function setCorridaField(field, val){
   log.corrida = log.corrida || {};
   log.corrida[field] = val;
   saveData(); renderTreinoResumoHoje();
+}
+
+/* ====================== TAB CARDIO (gamificado) ====================== */
+function weekDatesRange(){
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = (day===0 ? -6 : 1-day);
+  const monday = new Date(now); monday.setDate(now.getDate()+diffToMonday);
+  const dates = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    dates.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  }
+  return dates;
+}
+function cardioGameBarHtml(){
+  const target = PLAN.grade.filter(g=>g.tipo==='corrida').length;
+  const week = weekDatesRange();
+  const done = week.filter(dk=> DATA.logs[dk] && DATA.logs[dk].workoutType==='corrida').length;
+  const totalAllTime = Object.values(DATA.logs).filter(l=>l.workoutType==='corrida').length;
+  const pct = target>0 ? Math.min(100, Math.round(done/target*100)) : 0;
+  return `<div class="daily-total" style="margin-bottom:4px;">
+    <div class="dt-kcal" style="font-size:20px;">🏃 ${done}/${target} <span class="dt-meta">cardios essa semana</span></div>
+    <div class="dt-bar"><div class="dt-bar-fill" style="width:${pct}%"></div></div>
+    <div class="dt-status">${pct>=100?'Meta da semana batida! 🎉':done+' de '+target+' feitos'}</div>
+    <div class="dt-macros">Total de cardios registrados: ${totalAllTime}</div>
+  </div>`;
+}
+function cardioRecordsHtml(){
+  let maiorKm=0, maisKcal=0, maiorTempo=0, maisBlocos=0;
+  Object.values(DATA.logs).forEach(l=>{
+    if(l.workoutType!=='corrida' || !l.corrida) return;
+    const c = l.corrida;
+    const km = Math.max(parseFloat(c.kmRelogio)||0, parseFloat(c.kmMaquina)||0);
+    const kcal = Math.max(parseFloat(c.kcalRelogio)||0, parseFloat(c.kcalMaquina)||0);
+    if(km>maiorKm) maiorKm=km;
+    if(kcal>maisKcal) maisKcal=kcal;
+    if((parseFloat(c.tempo)||0)>maiorTempo) maiorTempo=parseFloat(c.tempo)||0;
+    if((c.blocosFeitos||0)>maisBlocos) maisBlocos=c.blocosFeitos||0;
+  });
+  if(!maiorKm && !maisKcal && !maiorTempo && !maisBlocos) return `<p class="muted">Sem recordes ainda — comece a registrar!</p>`;
+  return `<div class="stat-grid">
+    <div class="stat"><div class="v">${maiorKm.toFixed(2)}</div><div class="l">maior km</div></div>
+    <div class="stat"><div class="v">${maisKcal.toFixed(0)}</div><div class="l">mais kcal</div></div>
+    <div class="stat"><div class="v">${maiorTempo.toFixed(0)}min</div><div class="l">mais tempo</div></div>
+    <div class="stat"><div class="v">${maisBlocos}</div><div class="l">mais blocos</div></div>
+  </div>`;
+}
+function renderCardioTab(){
+  const gameBarEl = document.getElementById('cardioGameBar');
+  const recordsEl = document.getElementById('cardioRecords');
+  const startArea = document.getElementById('cardioStartArea');
+  if(!gameBarEl || !recordsEl || !startArea) return;
+  gameBarEl.innerHTML = cardioGameBarHtml();
+  recordsEl.innerHTML = cardioRecordsHtml();
+  const log = getLog();
+  if(log.workoutType !== 'corrida'){
+    startArea.innerHTML = `<p class="muted">Hoje seu treino registrado é "${workoutTypeLabel(log.workoutType)}".</p>
+      <button class="chip primary" onclick="setWorkoutType('corrida')">🏃 Marcar hoje como dia de Cardio</button>`;
+    return;
+  }
+  log.corrida = log.corrida || {};
+  const c = log.corrida;
+  const cfg = corridaConfig();
+  startArea.innerHTML = `
+    <h2 style="margin-top:0;">✅ Cardio de hoje</h2>
+    <label>Equipamento</label>
+    <select onchange="setCorridaField('equipamento',this.value)">
+      <option value="">Selecione...</option>
+      <option value="Esteira" ${c.equipamento==='Esteira'?'selected':''}>Esteira</option>
+      <option value="Bicicleta" ${c.equipamento==='Bicicleta'?'selected':''}>Bicicleta</option>
+      <option value="Escada" ${c.equipamento==='Escada'?'selected':''}>Escada</option>
+    </select>
+    <label style="margin-top:8px;">Modo</label>
+    <select onchange="setCorridaField('modo',this.value)">
+      <option value="">Selecione...</option>
+      <option value="Caminhada" ${c.modo==='Caminhada'?'selected':''}>Caminhada</option>
+      <option value="Intervalado" ${c.modo==='Intervalado'?'selected':''}>Intervalado (trote/caminhada)</option>
+      <option value="Corrida" ${c.modo==='Corrida'?'selected':''}>Corrida contínua</option>
+    </select>
+    <div class="row" style="margin-top:8px;">
+      <div><label>Inclinação (%)</label><input type="number" step="0.5" value="${c.inclinacao||''}" oninput="setCorridaField('inclinacao',this.value)"></div>
+      <div><label>Tempo (min)</label><input type="number" value="${c.tempo||''}" oninput="setCorridaField('tempo',this.value)"></div>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <div><label>Km — relógio</label><input type="number" step="0.01" value="${c.kmRelogio||''}" oninput="setCorridaField('kmRelogio',this.value)"></div>
+      <div><label>Km — esteira/bike/escada</label><input type="number" step="0.01" value="${c.kmMaquina||''}" oninput="setCorridaField('kmMaquina',this.value)"></div>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <div><label>Kcal — relógio</label><input type="number" value="${c.kcalRelogio||''}" oninput="setCorridaField('kcalRelogio',this.value)"></div>
+      <div><label>Kcal — esteira/bike/escada</label><input type="number" value="${c.kcalMaquina||''}" oninput="setCorridaField('kcalMaquina',this.value)"></div>
+    </div>
+    <div class="exercise" style="margin-top:10px;">
+      <div class="ex-title"><span>⏱ Timer intervalado (trote/caminhada)</span></div>
+      <div class="row" style="margin-top:8px;">
+        <div><label>Aquecimento (min)</label><input type="number" value="${cfg.aquecimento/60}" onchange="setCorridaConfig('aquecimento', this.value*60)"></div>
+        <div><label>Trote (s)</label><input type="number" value="${cfg.trote}" onchange="setCorridaConfig('trote', this.value)"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div><label>Caminhada (s)</label><input type="number" value="${cfg.caminhada}" onchange="setCorridaConfig('caminhada', this.value)"></div>
+        <div><label>Blocos</label><input type="number" value="${cfg.blocos}" onchange="setCorridaConfig('blocos', this.value)"></div>
+      </div>
+      <div id="corridaTimerBox" style="margin-top:10px;"></div>
+    </div>
+    ${c.blocosFeitos ? `<p class="muted" style="margin-top:6px;">Último timer: ${c.blocosFeitos} bloco(s) de trote/caminhada concluídos.</p>` : ''}
+    <button class="chip" style="margin-top:10px;" onclick="setWorkoutType(''); renderCardioTab();">Desmarcar cardio de hoje</button>`;
+  renderCorridaTimer();
 }
 
 /* ====================== TIMER INTERVALADO DE CORRIDA ====================== */
@@ -928,7 +1052,7 @@ function finishCorridaTimer(){
   log.corrida.blocosFeitos = corridaRun.blockIdx;
   saveData();
   corridaRun.phase = 'fim';
-  renderWorkoutArea();
+  renderCardioTab();
   renderTreinoResumoHoje();
 }
 function renderCorridaTimer(){
@@ -1579,6 +1703,7 @@ function initToday(){
   renderSono();
   renderWorkoutArea();
   renderTreinoResumoHoje();
+  renderCardioTab();
   renderJejum();
   renderSuplementos();
   renderFoodDatalist();
