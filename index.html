@@ -638,6 +638,12 @@ function switchTab(name){
   document.querySelector('nav.bottom button[data-tab="'+name+'"]').classList.add('active');
   if(name==='painel') renderPainel();
   if(name==='cardio') renderCardioTab();
+  try{ localStorage.setItem('saudeItalo_lastTab', name); }catch(e){}
+}
+function restoreLastTab(){
+  let last = '';
+  try{ last = localStorage.getItem('saudeItalo_lastTab') || ''; }catch(e){}
+  if(last && document.getElementById('tab-'+last)) switchTab(last);
 }
 
 /* ====================== HOJE: ÁGUA ====================== */
@@ -1161,11 +1167,14 @@ function releaseWakeLock(){
   if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; }
 }
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState==='visible' && corridaRun && corridaRun.running) requestWakeLock();
+  if(document.visibilityState==='visible' && corridaRun && corridaRun.running){
+    requestWakeLock();
+    corridaTick();
+  }
 });
 function startCorridaTimer(){
   const cfg = corridaConfig();
-  corridaRun = { phase:'aquecimento', phaseTime:cfg.aquecimento, phaseTotal:cfg.aquecimento, blockIdx:0, blocosTarget:cfg.blocos, totalSec:0, running:true };
+  corridaRun = { phase:'aquecimento', phaseTime:cfg.aquecimento, phaseTotal:cfg.aquecimento, blockIdx:0, blocosTarget:cfg.blocos, totalSec:0, running:true, lastTickAt:Date.now() };
   if(corridaRunInterval) clearInterval(corridaRunInterval);
   corridaRunInterval = setInterval(corridaTick, 1000);
   requestWakeLock();
@@ -1175,10 +1184,27 @@ function startCorridaTimer(){
 }
 function corridaTick(){
   if(!corridaRun) return;
-  corridaRun.totalSec++;
-  corridaRun.phaseTime--;
-  if(corridaRun.phaseTime>=1 && corridaRun.phaseTime<=5 && corridaRun.phase!=='fim') beep(660,120);
-  if(corridaRun.phaseTime<=0) advanceCorridaPhase();
+  const now = Date.now();
+  let elapsed = Math.round((now - (corridaRun.lastTickAt||now))/1000);
+  corridaRun.lastTickAt = now;
+  if(elapsed<1) elapsed = 1;
+  if(elapsed===1){
+    corridaRun.totalSec++;
+    corridaRun.phaseTime--;
+    if(corridaRun.phaseTime>=1 && corridaRun.phaseTime<=5 && corridaRun.phase!=='fim') beep(660,120);
+    if(corridaRun.phaseTime<=0) advanceCorridaPhase();
+  } else {
+    // ficou em segundo plano/tela bloqueada — recupera o tempo perdido sem repetir beeps a cada segundo
+    let remaining = elapsed;
+    while(remaining>0 && corridaRun && corridaRun.phase!=='fim'){
+      const step = Math.min(remaining, corridaRun.phaseTime);
+      corridaRun.totalSec += step;
+      corridaRun.phaseTime -= step;
+      remaining -= step;
+      if(corridaRun.phaseTime<=0) advanceCorridaPhase();
+    }
+    if(corridaRun) speak('Voltei a acompanhar seu treino.');
+  }
   renderCorridaTimer();
 }
 function advanceCorridaPhase(){
@@ -1248,6 +1274,7 @@ function pauseCorridaTimer(){
 function resumeCorridaTimer(){
   if(!corridaRun) return;
   corridaRun.running=true;
+  corridaRun.lastTickAt = Date.now();
   corridaRunInterval = setInterval(corridaTick, 1000);
   requestWakeLock();
   renderCorridaTimer();
@@ -1945,6 +1972,7 @@ renderPlanRef();
 renderCardapioRef();
 fillExerciseSelect();
 initToday();
+restoreLastTab();
 </script>
 </body>
 </html>
