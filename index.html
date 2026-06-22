@@ -56,6 +56,13 @@
   .set-row .ok{width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;}
   .set-row .ok.done{background:rgba(74,222,128,.2); border-color:var(--accent); color:var(--accent);}
 
+  .rest-bar{display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(74,222,128,.12); border:1px solid var(--accent); border-radius:10px; padding:8px 12px; margin-bottom:10px;}
+  .rest-bar .rest-time{font-size:20px; font-weight:700; color:var(--accent);}
+  .rest-bar .rest-actions{display:flex; gap:6px;}
+  .rest-bar button{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 10px; font-size:12px;}
+  .rest-bar.done{background:rgba(56,189,248,.12); border-color:var(--accent2);}
+  .rest-bar.done .rest-time{color:var(--accent2);}
+
   .meal{margin-bottom:14px;}
   .meal-title{font-weight:600; font-size:14px; margin-bottom:6px;}
   .opt{display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px;}
@@ -164,6 +171,7 @@
 
     <div class="card">
       <h2>🏋️ Treino de hoje</h2>
+      <div id="restTimerBar" class="rest-bar" style="display:none;"></div>
       <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
       <label>O que foi hoje?</label>
       <select id="workoutType" onchange="setWorkoutType(this.value)">
@@ -682,8 +690,53 @@ function toggleSetDone(exId, kind, idx){
   const log = getLog();
   const store = kind==='carga' ? log.exercises : log.treinoCasa;
   if(!store[exId].sets[idx]) store[exId].sets[idx] = {peso:'',reps:'',done:false};
-  store[exId].sets[idx].done = !store[exId].sets[idx].done;
+  const wasDone = store[exId].sets[idx].done;
+  store[exId].sets[idx].done = !wasDone;
   saveData(); renderWorkoutArea();
+  if(!wasDone) startRestTimer();
+}
+
+/* ====================== TIMER DE DESCANSO ====================== */
+let restInterval = null;
+let restRemaining = 0;
+let restDefault = 60;
+function startRestTimer(seconds){
+  if(restInterval) clearInterval(restInterval);
+  restRemaining = seconds!=null ? seconds : restDefault;
+  renderRestTimer();
+  restInterval = setInterval(()=>{
+    restRemaining--;
+    if(restRemaining<=0){
+      clearInterval(restInterval); restInterval=null; restRemaining=0;
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    }
+    renderRestTimer();
+  },1000);
+}
+function adjustRest(delta){
+  restRemaining = Math.max(0, restRemaining+delta);
+  renderRestTimer();
+}
+function stopRestTimer(){
+  if(restInterval){ clearInterval(restInterval); restInterval=null; }
+  restRemaining = 0;
+  renderRestTimer();
+}
+function renderRestTimer(){
+  const bar = document.getElementById('restTimerBar');
+  if(!bar) return;
+  if(restRemaining<=0 && !restInterval){ bar.style.display='none'; bar.className='rest-bar'; return; }
+  bar.style.display='flex';
+  const mm = String(Math.floor(restRemaining/60)).padStart(2,'0');
+  const ss = String(restRemaining%60).padStart(2,'0');
+  const finished = restRemaining<=0;
+  bar.className = 'rest-bar' + (finished?' done':'');
+  bar.innerHTML = `<div>⏱ Descanso<br><span class="rest-time">${finished?'Pronto!':mm+':'+ss}</span></div>
+    <div class="rest-actions">
+      <button onclick="adjustRest(15)">+15s</button>
+      <button onclick="adjustRest(-15)">-15s</button>
+      <button onclick="stopRestTimer()">Pular</button>
+    </div>`;
 }
 
 function renderWorkoutArea(){
