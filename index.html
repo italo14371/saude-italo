@@ -29,6 +29,10 @@
 
   .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px;}
   .card h2{margin:0 0 10px; font-size:15px; color:var(--accent2); display:flex; align-items:center; gap:6px;}
+  .card details summary{font-size:15px; color:var(--accent2); cursor:pointer; list-style:none;}
+  .card details summary::-webkit-details-marker{display:none;}
+  .card details summary::before{content:'▸ '; }
+  .card details[open] summary::before{content:'▾ '; }
   .card h3{margin:14px 0 8px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
 
   .progress{height:14px; background:var(--card2); border-radius:8px; overflow:hidden; border:1px solid var(--border);}
@@ -179,13 +183,13 @@
     </div>
 
     <div class="card">
-      <h2>⚖️ Peso de hoje</h2>
+      <h2>⚖️ Peso de hoje<button class="chip small" style="margin-left:auto;" onclick="clearSection('peso')">Limpar</button></h2>
       <input type="number" step="0.1" id="weightInput" placeholder="Ex: 80.0" oninput="setWeight(this.value)">
       <div class="muted" id="weightDiff" style="margin-top:6px;"></div>
     </div>
 
     <div class="card">
-      <h2>😴 Sono</h2>
+      <h2>😴 Sono<button class="chip small" style="margin-left:auto;" onclick="clearSection('sono')">Limpar</button></h2>
       <div class="row">
         <div>
           <label>Dormi às</label>
@@ -213,17 +217,17 @@
     </div>
 
     <div class="card">
-      <h2>🕐 Jejum de hoje</h2>
+      <h2>🕐 Jejum de hoje<button class="chip small" style="margin-left:auto;" onclick="clearSection('jejum')">Limpar</button></h2>
       <div id="jejumArea"></div>
     </div>
 
     <div class="card">
-      <h2>💊 Suplementos de hoje</h2>
+      <h2>💊 Suplementos de hoje<button class="chip small" style="margin-left:auto;" onclick="clearSection('suplementos')">Limpar</button></h2>
       <div id="suplArea"></div>
     </div>
 
     <div class="card">
-      <h2>🍽️ Refeições de hoje</h2>
+      <h2>🍽️ Refeições de hoje<button class="chip small" style="margin-left:auto;" onclick="clearSection('refeicoes')">Limpar</button></h2>
       <datalist id="foodList"></datalist>
       <div id="mealsTotal" style="margin-bottom:10px;"></div>
       <div id="mealsArea"></div>
@@ -257,7 +261,7 @@
   <!-- TAB: TREINO -->
   <section class="tab" id="tab-treino">
     <div class="card">
-      <h2>✅ Registrar treino de hoje</h2>
+      <h2>✅ Registrar treino de hoje<button class="chip small" style="margin-left:auto;" onclick="clearSection('treino')">Limpar</button></h2>
       <div id="treinoProgressBar"></div>
       <div id="restTimerBar" class="rest-bar" style="display:none;"></div>
       <div class="muted" id="treinoSugerido" style="margin-bottom:8px; font-size:13px;"></div>
@@ -279,24 +283,32 @@
       <p class="muted" style="margin-top:8px;">Se faltar academia no dia de Treino A/B/C → faça o Treino Casa no lugar. Se faltar corrida → Treino Casa ou descanso.</p>
     </div>
     <div class="card">
-      <h2>🏋️ Treino A — Pernas + Core</h2>
-      <p class="muted">Foco quadríceps/posterior, poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
-      <div id="planTreinoA"></div>
+      <details>
+        <summary>🏋️ Treino A — Pernas + Core (ver exercícios)</summary>
+        <p class="muted" style="margin-top:8px;">Foco quadríceps/posterior, poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
+        <div id="planTreinoA"></div>
+      </details>
     </div>
     <div class="card">
-      <h2>🏋️ Treino B — Costas + Core</h2>
-      <p class="muted">Puxadas leves (pegada neutra/aberta), poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
-      <div id="planTreinoB"></div>
+      <details>
+        <summary>🏋️ Treino B — Costas + Core (ver exercícios)</summary>
+        <p class="muted" style="margin-top:8px;">Puxadas leves (pegada neutra/aberta), poupando o ombro sensível. 3-5min de mobilidade lombar/pescoço no início.</p>
+        <div id="planTreinoB"></div>
+      </details>
     </div>
     <div class="card">
-      <h2>🏋️ Treino C — Pernas (posterior/glúteo) + Core</h2>
-      <p class="muted">Variação do Treino A, foco posterior/glúteo. 3-5min de mobilidade lombar/pescoço no início.</p>
-      <div id="planTreinoC"></div>
+      <details>
+        <summary>🏋️ Treino C — Pernas (posterior/glúteo) + Core (ver exercícios)</summary>
+        <p class="muted" style="margin-top:8px;">Variação do Treino A, foco posterior/glúteo. 3-5min de mobilidade lombar/pescoço no início.</p>
+        <div id="planTreinoC"></div>
+      </details>
     </div>
     <div class="card">
-      <h2>🏠 Treino Casa (Plano B)</h2>
-      <p class="muted">Calistenia leve, sem equipamento, mesmo foco em core/lombar/pescoço, poupando o ombro.</p>
-      <div id="planCasa"></div>
+      <details>
+        <summary>🏠 Treino Casa (Plano B) (ver exercícios)</summary>
+        <p class="muted" style="margin-top:8px;">Calistenia leve, sem equipamento, mesmo foco em core/lombar/pescoço, poupando o ombro.</p>
+        <div id="planCasa"></div>
+      </details>
     </div>
   </section>
 
@@ -326,8 +338,10 @@
       <canvas id="chartCardioEvol" height="180"></canvas>
     </div>
     <div class="card">
-      <h2>📈 Progressão planejada</h2>
-      <div id="planCorrida"></div>
+      <details>
+        <summary>📈 Progressão planejada (ver detalhes)</summary>
+        <div id="planCorrida" style="margin-top:8px;"></div>
+      </details>
     </div>
   </section>
 
@@ -679,6 +693,32 @@ function resetWater(){
   saveData(); renderAgua();
 }
 
+/* ====================== LIMPAR POR GRUPO ====================== */
+function clearSection(section){
+  if(!confirm('Limpar essas informações de hoje? Não dá pra desfazer.')) return;
+  const log = getLog();
+  if(section==='peso'){
+    log.weight = null;
+    renderPeso();
+  } else if(section==='sono'){
+    log.sono = {dormiu:'',acordou:'',qualidade:''};
+    renderSono();
+  } else if(section==='jejum'){
+    log.jejum = ''; log.jejumFim = '';
+    renderJejum();
+  } else if(section==='suplementos'){
+    log.suplementos = {};
+    renderSuplementos();
+  } else if(section==='refeicoes'){
+    log.meals = {}; log.cardapioSel = {}; log.mealsExtra = {}; log.kcal = null;
+    renderMeals();
+  } else if(section==='treino'){
+    log.workoutType = ''; log.exercises = {}; log.treinoCasa = {}; log.corrida = {}; log.extraExercises = [];
+    renderWorkoutArea(); renderTreinoResumoHoje(); renderCardioTab();
+  }
+  saveData();
+}
+
 /* ====================== HOJE: PESO ====================== */
 function renderPeso(){
   const log = getLog();
@@ -751,7 +791,7 @@ function workoutTypeLabel(type){
 }
 
 function defaultSet(exDef){
-  return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false };
+  return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false, manualPeso:false };
 }
 function maxPesoForExercise(exId){
   let max = 0;
@@ -761,6 +801,94 @@ function maxPesoForExercise(exId){
     data.sets.forEach(s=>{ const p = parseFloat(s.peso)||0; if(p>max) max=p; });
   });
   return max;
+}
+
+/* ====================== EXERCÍCIOS EXTRAS (fora do plano do dia) ====================== */
+function renderExtraExercises(log){
+  log.extraExercises = log.extraExercises || [];
+  let h = `<div class="exercise" style="margin-top:4px;">
+    <div class="ex-title"><span>➕ Exercícios extras de hoje</span></div>
+    <div class="ex-meta">Fez algo fora do treino planejado (ex: dorsal num dia de perna)? Adicione aqui.</div>`;
+  log.extraExercises.forEach(ex=>{
+    const doneCount = ex.sets.filter(s=>s.done).length;
+    const allDone = ex.sets.length>0 && doneCount===ex.sets.length;
+    h += `<div class="exercise ${allDone?'exercise-done':''}" style="margin-top:8px;">
+      <div class="ex-title"><span>${ex.nome}</span>${allDone?'<span class="ex-done-badge">✓ Finalizado</span>':''}<button class="fi-del" onclick="removeExtraExercise('${ex.id}')">✕</button></div>
+      <div class="sets">`;
+    ex.sets.forEach((s,i)=>{
+      h += `<div class="set-row">
+        <div class="set-idx">${i+1}</div>
+        <input type="number" id="pesoExtra-${ex.id}-${i}" placeholder="kg" value="${s.peso}" oninput="setExtraSetField('${ex.id}',${i},'peso',this.value)">
+        <input type="number" placeholder="reps" value="${s.reps}" oninput="setExtraSetField('${ex.id}',${i},'reps',this.value)">
+        <div class="ok ${s.done?'done':''}" onclick="toggleExtraSetDone('${ex.id}',${i})">${s.done?'✓':''}</div>
+        <button class="fi-del" onclick="removeExtraSet('${ex.id}',${i})">✕</button>
+      </div>`;
+    });
+    h += `</div><button class="ex-skip-btn" onclick="addExtraSet('${ex.id}')">+ série</button></div>`;
+  });
+  h += `<div class="add-food-row" style="margin-top:8px;">
+    <input type="text" id="extraExNome" placeholder="Nome do exercício (ex: Puxada alta)" style="flex:2;">
+    <button onclick="addExtraExercise()">+ Adicionar</button>
+  </div></div>`;
+  return h;
+}
+function addExtraExercise(){
+  const input = document.getElementById('extraExNome');
+  const nome = input.value.trim();
+  if(!nome) return;
+  const log = getLog();
+  log.extraExercises = log.extraExercises || [];
+  log.extraExercises.push({ id:'extra_'+Date.now(), nome, sets:[{peso:'',reps:'',done:false,manualPeso:false}] });
+  saveData();
+  renderWorkoutArea(); renderTreinoResumoHoje();
+}
+function removeExtraExercise(id){
+  const log = getLog();
+  log.extraExercises = (log.extraExercises||[]).filter(e=>e.id!==id);
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+}
+function addExtraSet(id){
+  const log = getLog();
+  const ex = (log.extraExercises||[]).find(e=>e.id===id);
+  if(!ex) return;
+  ex.sets.push({peso:'',reps:'',done:false,manualPeso:false});
+  saveData(); renderWorkoutArea();
+}
+function removeExtraSet(id, idx){
+  const log = getLog();
+  const ex = (log.extraExercises||[]).find(e=>e.id===id);
+  if(!ex) return;
+  ex.sets.splice(idx,1);
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+}
+function setExtraSetField(id, idx, field, val){
+  const log = getLog();
+  const ex = (log.extraExercises||[]).find(e=>e.id===id);
+  if(!ex) return;
+  if(!ex.sets[idx]) ex.sets[idx] = {peso:'',reps:'',done:false,manualPeso:false};
+  ex.sets[idx][field] = val;
+  if(field==='peso'){
+    if(idx===0){
+      for(let i=1;i<ex.sets.length;i++){
+        if(!ex.sets[i].manualPeso){
+          ex.sets[i].peso = val;
+          const inp = document.getElementById(`pesoExtra-${id}-${i}`);
+          if(inp) inp.value = val;
+        }
+      }
+    } else {
+      ex.sets[idx].manualPeso = true;
+    }
+  }
+  saveData(); renderTreinoResumoHoje();
+}
+function toggleExtraSetDone(id, idx){
+  const log = getLog();
+  const ex = (log.extraExercises||[]).find(e=>e.id===id);
+  if(!ex || !ex.sets[idx]) return;
+  ex.sets[idx].done = !ex.sets[idx].done;
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+  if(ex.sets[idx].done) startRestTimer();
 }
 function exerciseRow(exId, exDef, storeObj, kind){
   // kind: 'carga' (sets com peso/reps) ou 'casa' (checklist)
@@ -796,7 +924,7 @@ function exerciseRow(exId, exDef, storeObj, kind){
       const isPR = peso>0 && pr>0 && peso>=pr;
       html += `<div class="set-row">
         <div class="set-idx">${i+1}</div>
-        <input type="number" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
+        <input type="number" id="peso-${exId}-${i}" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
         <input type="number" placeholder="reps" value="${s.reps}" oninput="setSetField('${exId}','${kind}',${i},'reps',this.value)">
         <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',${i})">${s.done?'✓':''}</div>
         ${isPR ? `<span title="Novo recorde pessoal!" style="font-size:16px;">🏆</span>` : ''}
@@ -827,8 +955,23 @@ function setSetField(exId, kind, idx, field, val){
   const log = getLog();
   const store = kind==='carga' ? log.exercises : log.treinoCasa;
   const exDef = kind==='carga' ? PLAN[log.workoutType].find(e=>(e.id||e.nome)===exId) : null;
-  if(!store[exId].sets[idx]) store[exId].sets[idx] = exDef ? defaultSet(exDef) : {peso:'',reps:'',done:false};
+  if(!store[exId].sets[idx]) store[exId].sets[idx] = exDef ? defaultSet(exDef) : {peso:'',reps:'',done:false,manualPeso:false};
   store[exId].sets[idx][field] = val;
+  if(field==='peso'){
+    if(idx===0 && kind==='carga'){
+      const n = exDef ? exDef.series : store[exId].sets.length;
+      for(let i=1;i<n;i++){
+        if(!store[exId].sets[i]) store[exId].sets[i] = defaultSet(exDef);
+        if(!store[exId].sets[i].manualPeso){
+          store[exId].sets[i].peso = val;
+          const inp = document.getElementById(`peso-${exId}-${i}`);
+          if(inp) inp.value = val;
+        }
+      }
+    } else if(idx>0){
+      store[exId].sets[idx].manualPeso = true;
+    }
+  }
   saveData(); renderTreinoResumoHoje();
 }
 function toggleSetDone(exId, kind, idx){
@@ -914,8 +1057,10 @@ function renderWorkoutArea(){
   progressEl.innerHTML = '';
   if(log.workoutType==='treinoA' || log.workoutType==='treinoB' || log.workoutType==='treinoC'){
     log.exercises = log.exercises || {};
+    log.extraExercises = log.extraExercises || [];
     let h='';
     PLAN[log.workoutType].forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
+    h += renderExtraExercises(log);
     area.innerHTML = h;
     const stats = treinoSessionStats(log.workoutType, log);
     const pct = stats.totalSets>0 ? Math.round(stats.doneSets/stats.totalSets*100) : 0;
