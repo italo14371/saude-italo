@@ -499,7 +499,8 @@ const PLAN = {
     { id:'abdutora', nome:'Cadeira Abdutora', series:3, reps:12,
       alternativas:['Opcional, se a máquina estiver livre'] },
     { id:'core', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
-      alternativas:['Abdominal Isométrico','Hip Thrust (carga leve)'] }
+      alternativas:['Abdominal Isométrico','Hip Thrust (carga leve)'],
+      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
   ],
   treinoB: [
     { id:'remadabaixa', nome:'Remada Baixa Neutra / Puxada na Polia', series:3, reps:12,
@@ -511,7 +512,8 @@ const PLAN = {
     { id:'remadaunilateral', nome:'Remada Unilateral (halter ou polia, um braço por vez)', series:3, reps:'10 cada lado',
       alternativas:['Remada Baixa Neutra'] },
     { id:'coreb', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
-      alternativas:['Abdominal Isométrico'] }
+      alternativas:['Abdominal Isométrico'],
+      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
   ],
   treinoC: [
     { id:'flexorac', nome:'Cadeira Flexora (posterior)', series:3, reps:12,
@@ -519,11 +521,13 @@ const PLAN = {
     { id:'extensorac', nome:'Cadeira Extensora', series:3, reps:12,
       alternativas:['Leg Press'] },
     { id:'hipthrust', nome:'Elevação Pélvica / Hip Thrust (máquina ou chão)', series:3, reps:12,
-      alternativas:['Ponte de Glúteo'] },
+      alternativas:['Ponte de Glúteo'],
+      instrucao:'Se a academia tiver a máquina de hip thrust, sente apoiando a parte de cima das costas (escápulas) no encosto, pés no chão na largura do quadril, e empurre o quadril pra frente/cima apertando o glúteo, descendo controlado depois. Sem a máquina, faça no chão (igual à ponte de glúteo): apoie as costas/ombros num banco, pés no chão afastados na linha dos quadris, suba o quadril até ficar alinhado com joelhos e ombros, aperte o glúteo no topo e desça sem deixar cair de vez.' },
     { id:'panturrilha', nome:'Panturrilha (leg press ou em pé)', series:3, reps:15,
       alternativas:[] },
     { id:'corec', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
-      alternativas:['Abdominal Isométrico'] }
+      alternativas:['Abdominal Isométrico'],
+      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
   ],
   // Banco de exercícios por grupo muscular, pra escolher exercícios extras sem precisar saber o nome de cabeça
   bancoExercicios: {
@@ -540,13 +544,20 @@ const PLAN = {
     { fase:'Fase 2 (mais adiante)', desc:'Quando o intervalado estiver fácil: aumentar proporção de trote em relação à caminhada, e depois reduzir a caminhada gradualmente até corrida contínua leve.' }
   ],
   treinoCasa: [
-    { nome:'Aquecimento', desc:'Marcha/polichinelo leve + mobilidade de ombros e quadril + gato-camelo (8-10x)' },
-    { nome:'Agachamento livre (ou sentar/levantar de cadeira)', desc:'2-3 séries x 12 reps' },
-    { nome:'Afundo / passada estática', desc:'2-3 séries x 10 reps cada lado' },
-    { nome:'Ponte de glúteo', desc:'2-3 séries x 12 reps' },
-    { nome:'Prancha', desc:'2-3 séries x 20-30s (joelhos no chão se precisar)' },
-    { nome:'Superman leve', desc:'2-3 séries x 10-12 reps' },
-    { nome:'Alongamento final', desc:'Postura da criança, alongamento de isquiotibiais, rotação de pescoço, alongamento de trapézio' }
+    { nome:'Aquecimento', desc:'Marcha/polichinelo leve + mobilidade de ombros e quadril + gato-camelo (8-10x)',
+      instrucao:'Marcha: ande no lugar levantando os joelhos, em ritmo leve. Polichinelo leve: abra e feche pernas/braços saltando bem baixinho, sem impacto forte. Gato-camelo: de quatro apoios (mãos e joelhos no chão), arqueie as costas pra cima como um gato assustado, depois deixe a barriga cair arqueando pra baixo — alterne lento e controlado, 8-10 vezes.' },
+    { nome:'Agachamento livre (ou sentar/levantar de cadeira)', desc:'2-3 séries x 12 reps',
+      instrucao:'Pés na largura dos ombros, desça como se fosse sentar numa cadeira (quadril vai pra trás), joelhos alinhados com os pés sem passar muito da ponta deles, suba apertando o glúteo. Se usar cadeira: sente bem de leve (sem deixar o peso cair) e levante sem usar as mãos, se conseguir.' },
+    { nome:'Afundo / passada estática', desc:'2-3 séries x 10 reps cada lado',
+      instrucao:'Dê um passo grande pra frente, desça dobrando os dois joelhos até a perna de trás quase tocar o chão, joelho da frente alinhado com o tornozelo (sem passar da ponta do pé), suba voltando à posição inicial. Faça todas as repetições de um lado, depois troca de perna.' },
+    { nome:'Ponte de glúteo', desc:'2-3 séries x 12 reps',
+      instrucao:'Deite de barriga para cima, pés apoiados no chão, joelhos dobrados. Suba o quadril apertando o glúteo até o corpo formar uma linha reta dos ombros aos joelhos, depois desça controlado sem deixar cair de vez.' },
+    { nome:'Prancha', desc:'2-3 séries x 20-30s (joelhos no chão se precisar)',
+      instrucao:'Apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir. Se for muito difícil, apoie os joelhos no chão pra facilitar. Respire normal e mantenha pelo tempo indicado.' },
+    { nome:'Superman leve', desc:'2-3 séries x 10-12 reps',
+      instrucao:'Deite de barriga pra baixo, braços estendidos pra frente. Eleve braços e pernas ao mesmo tempo (como se estivesse voando), aperte a lombar e o glúteo no topo por 1-2 segundos, depois desça controlado.' },
+    { nome:'Alongamento final', desc:'Postura da criança, alongamento de isquiotibiais, rotação de pescoço, alongamento de trapézio',
+      instrucao:'Postura da criança: sente nos calcanhares e estique os braços pra frente no chão, relaxando a lombar. Alongamento de isquiotibiais: sentado ou em pé, estique a perna e tente alcançar o pé sem forçar/sem dor. Rotação de pescoço: gire a cabeça lentamente pros dois lados. Alongamento de trapézio: incline a cabeça pro lado, levando a orelha em direção ao ombro, sem forçar.' }
   ],
   // cada refeição é uma lista de slots (componentes); slots com 'food'+'gramas' são ajustáveis por peso,
   // slots sem 'food' têm macros fixos (combo pronto)
@@ -861,6 +872,11 @@ function workoutTypeLabel(type){
   return map[type] || 'nenhum ainda';
 }
 
+let openInstrucoes = {};
+function toggleInstrucao(exId){
+  openInstrucoes[exId] = !openInstrucoes[exId];
+  renderWorkoutArea();
+}
 function defaultSet(exDef){
   return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false, manualPeso:false };
 }
@@ -997,6 +1013,11 @@ function exerciseRow(exId, exDef, storeObj, kind){
     <div class="ex-title"><span>${data.sub || exDef.nome}</span>${allDone?'<span class="ex-done-badge">✓ Finalizado</span>':''}${skipped?'<span class="ex-skip-badge">Pulado hoje</span>':''}</div>
     <div class="ex-meta">${exDef.series ? exDef.series+'x'+exDef.reps : exDef.desc||''}</div>`;
   if(exDef.obs) html += `<div class="ex-obs">⚠️ ${exDef.obs}</div>`;
+  if(exDef.instrucao){
+    const openInst = !!openInstrucoes[exId];
+    html += `<button class="ex-skip-btn" style="margin-top:6px;" onclick="toggleInstrucao('${exId}')">${openInst?'▾':'▸'} ℹ️ Como fazer</button>`;
+    if(openInst) html += `<div class="muted" style="margin-top:6px; font-size:12px; line-height:1.5;">${exDef.instrucao}</div>`;
+  }
   if(skipped){
     html += `<button class="ex-skip-btn" onclick="setExerciseSkip('${exId}','${kind}',false)">↩ Desfazer (vou fazer este exercício)</button>`;
     html += `</div>`;
