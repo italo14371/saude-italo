@@ -188,6 +188,10 @@
       <div id="pesoCheckBanner" class="rest-bar done" style="display:none; margin-bottom:8px;"></div>
       <input type="number" step="0.1" id="weightInput" placeholder="Ex: 80.0" oninput="setWeight(this.value)">
       <div class="muted" id="weightDiff" style="margin-top:6px;"></div>
+      <div id="pesoProgressWrap" style="display:none; margin-top:8px;">
+        <div class="progress"><div id="pesoBar"></div></div>
+        <div class="progress-label"><span id="pesoLabel"></span><span id="pesoPct"></span></div>
+      </div>
     </div>
 
     <div class="card">
@@ -498,7 +502,7 @@ const PLAN = {
       alternativas:['Stiff (carga leve)','Mesa Flexora Deitada'] },
     { id:'abdutora', nome:'Cadeira Abdutora', series:3, reps:12,
       alternativas:['Opcional, se a máquina estiver livre'] },
-    { id:'core', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
+    { id:'core', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12', campos:'pranchaglu',
       alternativas:['Abdominal Isométrico','Hip Thrust (carga leve)'],
       instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
   ],
@@ -511,7 +515,7 @@ const PLAN = {
       obs:'Carga leve — poupar ombro sensível.' },
     { id:'remadaunilateral', nome:'Remada Unilateral (halter ou polia, um braço por vez)', series:3, reps:'10 cada lado',
       alternativas:['Remada Baixa Neutra'] },
-    { id:'coreb', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
+    { id:'coreb', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12', campos:'pranchaglu',
       alternativas:['Abdominal Isométrico'],
       instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
   ],
@@ -525,7 +529,7 @@ const PLAN = {
       instrucao:'Se a academia tiver a máquina de hip thrust, sente apoiando a parte de cima das costas (escápulas) no encosto, pés no chão na largura do quadril, e empurre o quadril pra frente/cima apertando o glúteo, descendo controlado depois. Sem a máquina, faça no chão (igual à ponte de glúteo): apoie as costas/ombros num banco, pés no chão afastados na linha dos quadris, suba o quadril até ficar alinhado com joelhos e ombros, aperte o glúteo no topo e desça sem deixar cair de vez.' },
     { id:'panturrilha', nome:'Panturrilha (leg press ou em pé)', series:3, reps:15,
       alternativas:[] },
-    { id:'corec', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12',
+    { id:'corec', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12', campos:'pranchaglu',
       alternativas:['Abdominal Isométrico'],
       instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
   ],
@@ -776,8 +780,10 @@ function renderPeso(){
   const ini = DATA.settings.pesoInicial;
   const meta = DATA.settings.pesoMeta;
   const el = document.getElementById('weightDiff');
+  const progressWrap = document.getElementById('pesoProgressWrap');
   if(ini==null){
     el.innerHTML = 'Configure seu peso inicial e meta na aba Painel → Dados.';
+    progressWrap.style.display = 'none';
   } else {
     const pesoRef = log.weight!=null ? log.weight : (last ? last.weight : ini);
     const diff = pesoRef - ini;
@@ -788,7 +794,13 @@ function renderPeso(){
       const feito = ini - pesoRef;
       const pct = total>0 ? Math.min(100, Math.max(0, Math.round(feito/total*100))) : 0;
       const falta = (pesoRef - meta).toFixed(1);
-      html += ` · meta: ${meta}kg · faltam ${falta}kg<div class="dt-bar" style="margin:6px 0 0;"><div class="dt-bar-fill" style="width:${pct}%"></div></div><span style="font-size:11px;">${pct}% do caminho até a meta</span>`;
+      html += ` · meta: ${meta}kg · faltam ${falta}kg`;
+      progressWrap.style.display = 'block';
+      document.getElementById('pesoBar').style.width = pct+'%';
+      document.getElementById('pesoLabel').textContent = `${pesoRef}kg / ${meta}kg`;
+      document.getElementById('pesoPct').textContent = pct+'%';
+    } else {
+      progressWrap.style.display = 'none';
     }
     if(log.weight==null && last){
       html += `<div style="margin-top:6px;">Peso de hoje ainda não confirmado — mostrando última pesagem (${last.date.slice(5)}). <button class="chip small" onclick="confirmCarriedWeight()">Confirmar mesmo peso hoje</button></div>`;
@@ -878,16 +890,23 @@ function toggleInstrucao(exId){
   renderWorkoutArea();
 }
 function defaultSet(exDef){
+  if(exDef.campos==='pranchaglu'){
+    const gluPadrao = (typeof exDef.reps==='string' && exDef.reps.includes('/')) ? exDef.reps.split('/')[1].trim() : '';
+    return { completa:true, tempo:'', gluReps:gluPadrao, done:false };
+  }
   return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false, manualPeso:false };
 }
-function maxPesoForExercise(exId){
+function maxFieldForExercise(exId, field){
   let max = 0;
   Object.values(DATA.logs).forEach(log=>{
     const data = log.exercises && log.exercises[exId];
     if(!data) return;
-    data.sets.forEach(s=>{ const p = parseFloat(s.peso)||0; if(p>max) max=p; });
+    data.sets.forEach(s=>{ const v = parseFloat(s[field])||0; if(v>max) max=v; });
   });
   return max;
+}
+function maxPesoForExercise(exId){
+  return maxFieldForExercise(exId, 'peso');
 }
 
 /* ====================== EXERCÍCIOS EXTRAS (fora do plano do dia) ====================== */
@@ -1031,7 +1050,24 @@ function exerciseRow(exId, exDef, storeObj, kind){
     });
     html += `</select>`;
   }
-  if(kind==='carga'){
+  if(kind==='carga' && exDef.campos==='pranchaglu'){
+    const prTempo = maxFieldForExercise(exId, 'tempo');
+    html += `<div class="sets">`;
+    for(let i=0;i<n;i++){
+      const s = data.sets[i] || defaultSet(exDef);
+      const tempo = parseFloat(s.tempo)||0;
+      const isPR = tempo>0 && prTempo>0 && tempo>=prTempo;
+      html += `<div class="set-row" style="flex-wrap:wrap;">
+        <div class="set-idx">${i+1}</div>
+        <label style="display:flex; align-items:center; gap:4px; font-size:11px; flex:none; color:var(--muted);" title="Prancha completa = apoiando só nos pés, sem o joelho no chão"><input type="checkbox" style="width:auto;" ${s.completa!==false?'checked':''} onchange="setSetField('${exId}','${kind}',${i},'completa',this.checked)">Prancha completa</label>
+        <input type="number" placeholder="seg. prancha" value="${s.tempo}" oninput="setSetField('${exId}','${kind}',${i},'tempo',this.value)">
+        <input type="number" placeholder="reps glúteo" value="${s.gluReps}" oninput="setSetField('${exId}','${kind}',${i},'gluReps',this.value)">
+        <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',${i})">${s.done?'✓':''}</div>
+        ${isPR ? `<span title="Novo recorde de tempo de prancha!" style="font-size:16px;">🏆</span>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+  } else if(kind==='carga'){
     const pr = maxPesoForExercise(exId);
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
