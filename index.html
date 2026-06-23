@@ -185,6 +185,7 @@
 
     <div class="card">
       <h2>⚖️ Peso de hoje<button class="chip small" style="margin-left:auto;" onclick="clearSection('peso')">Limpar</button></h2>
+      <div id="pesoCheckBanner" class="rest-bar done" style="display:none; margin-bottom:8px;"></div>
       <input type="number" step="0.1" id="weightInput" placeholder="Ex: 80.0" oninput="setWeight(this.value)">
       <div class="muted" id="weightDiff" style="margin-top:6px;"></div>
     </div>
@@ -431,6 +432,16 @@
         <div><label>Peso inicial (kg)</label><input type="number" step="0.1" id="settingsPesoInicial" oninput="setSettingsField('pesoInicial', this.value)"></div>
         <div><label>Meta de peso (kg)</label><input type="number" step="0.1" id="settingsPesoMeta" oninput="setSettingsField('pesoMeta', this.value)"></div>
       </div>
+      <label style="margin-top:8px;">Dia da pesagem semanal (lembrete)</label>
+      <select id="settingsPesoCheckDia" onchange="setSettingsField('pesoCheckDia', this.value)">
+        <option value="0">Domingo</option>
+        <option value="1">Segunda</option>
+        <option value="2">Terça</option>
+        <option value="3">Quarta</option>
+        <option value="4">Quinta</option>
+        <option value="5">Sexta</option>
+        <option value="6">Sábado</option>
+      </select>
     </div>
 
     <div class="card">
@@ -733,19 +744,65 @@ function clearSection(section){
 }
 
 /* ====================== HOJE: PESO ====================== */
+function lastWeightEntry(antesDeHoje){
+  const dates = allDatesSorted();
+  for(let i=dates.length-1;i>=0;i--){
+    const dk = dates[i];
+    if(antesDeHoje && dk>=todayKey()) continue;
+    const log = DATA.logs[dk];
+    if(log && log.weight!=null) return { date:dk, weight:log.weight };
+  }
+  return null;
+}
 function renderPeso(){
   const log = getLog();
-  document.getElementById('weightInput').value = log.weight ?? '';
+  const input = document.getElementById('weightInput');
+  const last = lastWeightEntry(true);
+  if(log.weight!=null) input.value = log.weight;
+  else if(last) input.value = last.weight;
+  else input.value = '';
+
   const ini = DATA.settings.pesoInicial;
   const meta = DATA.settings.pesoMeta;
-  const diff = (log.weight!=null && ini!=null) ? (log.weight - ini) : null;
   const el = document.getElementById('weightDiff');
-  if(diff!=null){
+  if(ini==null){
+    el.innerHTML = 'Configure seu peso inicial e meta na aba Painel → Dados.';
+  } else {
+    const pesoRef = log.weight!=null ? log.weight : (last ? last.weight : ini);
+    const diff = pesoRef - ini;
     const sign = diff>0?'+':'';
-    el.textContent = `Início: ${ini}kg → hoje: ${sign}${diff.toFixed(1)}kg${meta!=null?' | meta: '+meta+'kg':''}`;
-  } else if(ini==null){
-    el.textContent = 'Configure seu peso inicial e meta na aba Painel → Dados.';
-  } else { el.textContent = ''; }
+    let html = `Início: ${ini}kg → atual: ${pesoRef}kg (${sign}${diff.toFixed(1)}kg)`;
+    if(meta!=null){
+      const total = ini - meta;
+      const feito = ini - pesoRef;
+      const pct = total>0 ? Math.min(100, Math.max(0, Math.round(feito/total*100))) : 0;
+      const falta = (pesoRef - meta).toFixed(1);
+      html += ` · meta: ${meta}kg · faltam ${falta}kg<div class="dt-bar" style="margin:6px 0 0;"><div class="dt-bar-fill" style="width:${pct}%"></div></div><span style="font-size:11px;">${pct}% do caminho até a meta</span>`;
+    }
+    if(log.weight==null && last){
+      html += `<div style="margin-top:6px;">Peso de hoje ainda não confirmado — mostrando última pesagem (${last.date.slice(5)}). <button class="chip small" onclick="confirmCarriedWeight()">Confirmar mesmo peso hoje</button></div>`;
+    }
+    el.innerHTML = html;
+  }
+  renderPesoCheckBanner();
+}
+function confirmCarriedWeight(){
+  const last = lastWeightEntry(true);
+  if(!last) return;
+  setWeight(last.weight);
+}
+function renderPesoCheckBanner(){
+  const banner = document.getElementById('pesoCheckBanner');
+  if(!banner) return;
+  const log = getLog();
+  const checkDia = DATA.settings.pesoCheckDia ?? 1;
+  const isCheckDay = new Date().getDay()===Number(checkDia);
+  if(isCheckDay && log.weight==null){
+    banner.style.display = 'block';
+    banner.innerHTML = '📅 Hoje é dia de pesagem semanal — atualize seu peso real abaixo.';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 function setWeight(v){
   const log = getLog();
@@ -780,6 +837,7 @@ function setSono(field, val){
 function renderSettings(){
   document.getElementById('settingsPesoInicial').value = DATA.settings.pesoInicial ?? '';
   document.getElementById('settingsPesoMeta').value = DATA.settings.pesoMeta ?? '';
+  document.getElementById('settingsPesoCheckDia').value = DATA.settings.pesoCheckDia ?? 1;
 }
 function setSettingsField(field, val){
   DATA.settings[field] = val ? parseFloat(val) : null;
