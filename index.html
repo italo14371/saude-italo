@@ -424,6 +424,11 @@
     </div>
 
     <div class="card">
+      <h2>📅 Histórico de treinos</h2>
+      <div id="treinoHistorico" class="muted"></div>
+    </div>
+
+    <div class="card">
       <h2>📅 Frequência de treino (últimos 14 dias)</h2>
       <div id="freqGrid" style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;"></div>
       <div class="muted" style="margin-top:8px;">Meta: 4-6 dias treinados por semana</div>
@@ -1038,7 +1043,7 @@ function exerciseRow(exId, exDef, storeObj, kind){
   for(let i=0;i<n;i++){ if(data.sets[i] && data.sets[i].done) doneCount++; }
   const allDone = n>0 && doneCount===n;
   const skipped = !!data.skip;
-  let html = `<div class="exercise ${allDone?'exercise-done':''} ${skipped?'exercise-skipped':''}">
+  let html = `<div class="exercise ${allDone?'exercise-done':''} ${skipped?'exercise-skipped':''}" id="exrow-${exId}">
     <div class="ex-title"><span>${data.sub || exDef.nome}</span>${allDone?'<span class="ex-done-badge">✓ Finalizado</span>':''}${skipped?'<span class="ex-skip-badge">Pulado hoje</span>':''}</div>
     <div class="ex-meta">${exDef.series ? exDef.series+'x'+exDef.reps : exDef.desc||''}</div>`;
   if(exDef.obs) html += `<div class="ex-obs">⚠️ ${exDef.obs}</div>`;
@@ -1145,6 +1150,9 @@ function toggleSetDone(exId, kind, idx){
   store[exId].sets[idx].done = !wasDone;
   saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
   if(!wasDone) startRestTimer();
+  const n = kind==='carga' ? (exDef?exDef.series:store[exId].sets.length) : 1;
+  const doneCount = store[exId].sets.slice(0,n).filter(s=>s && s.done).length;
+  if(doneCount===n) autoAdvanceFrom(exId);
 }
 function setExerciseSkip(exId, kind, skip){
   const log = getLog();
@@ -1152,6 +1160,21 @@ function setExerciseSkip(exId, kind, skip){
   if(!store[exId]) store[exId] = { nome:'', sub:'', sets:[] };
   store[exId].skip = skip;
   saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+  if(skip) autoAdvanceFrom(exId);
+}
+function autoAdvanceFrom(exId){
+  setTimeout(()=>{
+    const cur = document.getElementById('exrow-'+exId);
+    if(!cur) return;
+    let next = cur.nextElementSibling;
+    while(next && !next.classList.contains('exercise')) next = next.nextElementSibling;
+    if(next) next.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 350);
+}
+function setKcalTreino(val){
+  const log = getLog();
+  log.kcalTreino = val ? parseFloat(val) : null;
+  saveData(); renderTreinoResumoHoje();
 }
 
 /* ====================== TIMER DE DESCANSO ====================== */
@@ -1231,12 +1254,20 @@ function renderWorkoutArea(){
       <div class="dt-bar"><div class="dt-bar-fill" style="width:${pct}%"></div></div>
       <div class="dt-status">${pct>=100?'Treino completo! 🎉':pct+'% feito'}</div>
       <div class="dt-macros">Carga total levantada: ${stats.totalKg.toFixed(0)} kg somados</div>
+      <div class="row" style="margin-top:10px; text-align:left;">
+        <div><label>🔥 Kcal estimadas (relógio/app) — registre depois do treino</label><input type="number" value="${log.kcalTreino||''}" oninput="setKcalTreino(this.value)"></div>
+      </div>
     </div>`;
   } else if(log.workoutType==='treinoCasa'){
     log.treinoCasa = log.treinoCasa || {};
     let h='';
     PLAN.treinoCasa.forEach((ex,i)=> h += exerciseRow('casa'+i, ex, log.treinoCasa, 'casa'));
     area.innerHTML = h;
+    progressEl.innerHTML = `<div class="daily-total" style="margin-bottom:10px;">
+      <div class="row" style="text-align:left;">
+        <div><label>🔥 Kcal estimadas (relógio/app) — registre depois do treino</label><input type="number" value="${log.kcalTreino||''}" oninput="setKcalTreino(this.value)"></div>
+      </div>
+    </div>`;
   } else if(log.workoutType==='corrida'){
     area.innerHTML = `<p class="muted">Hoje é dia de cardio 🏃 — acompanhe na aba dedicada.</p>
       <button class="chip primary" onclick="switchTab('cardio')">Ir para aba Cardio →</button>`;
@@ -1398,15 +1429,6 @@ function renderCardioTab(){
     </select>
     <div class="row" style="margin-top:8px;">
       <div><label>Inclinação (%)</label><input type="number" step="0.5" value="${c.inclinacao||''}" oninput="setCorridaField('inclinacao',this.value)"></div>
-      <div><label>Tempo (min)</label><input type="number" value="${c.tempo||''}" oninput="setCorridaField('tempo',this.value)"></div>
-    </div>
-    <div class="row" style="margin-top:6px;">
-      <div><label>Km — relógio</label><input type="number" step="0.01" value="${c.kmRelogio||''}" oninput="setCorridaField('kmRelogio',this.value)"></div>
-      <div><label>Km — esteira/bike/escada</label><input type="number" step="0.01" value="${c.kmMaquina||''}" oninput="setCorridaField('kmMaquina',this.value)"></div>
-    </div>
-    <div class="row" style="margin-top:6px;">
-      <div><label>Kcal — relógio</label><input type="number" value="${c.kcalRelogio||''}" oninput="setCorridaField('kcalRelogio',this.value)"></div>
-      <div><label>Kcal — esteira/bike/escada</label><input type="number" value="${c.kcalMaquina||''}" oninput="setCorridaField('kcalMaquina',this.value)"></div>
     </div>
     <div class="exercise" style="margin-top:10px;">
       <div class="ex-title"><span>⏱ Timer intervalado (trote/caminhada)</span></div>
@@ -1439,6 +1461,22 @@ function renderCardioTab(){
       <div id="corridaTimerBox" style="margin-top:10px;"></div>
     </div>
     ${c.blocosFeitos ? `<p class="muted" style="margin-top:6px;">Último timer: ${c.blocosFeitos} bloco(s) de trote/caminhada concluídos.</p>` : ''}
+
+    <div class="exercise" style="margin-top:10px;">
+      <div class="ex-title"><span>📝 Registrar pós-treino</span></div>
+      <p class="muted" style="margin-top:4px;">Depois de terminar, confira no relógio/esteira e preencha aqui.</p>
+      <div class="row" style="margin-top:8px;">
+        <div><label>Tempo (min)</label><input type="number" value="${c.tempo||''}" oninput="setCorridaField('tempo',this.value)"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div><label>Km — relógio</label><input type="number" step="0.01" value="${c.kmRelogio||''}" oninput="setCorridaField('kmRelogio',this.value)"></div>
+        <div><label>Km — esteira/bike/escada</label><input type="number" step="0.01" value="${c.kmMaquina||''}" oninput="setCorridaField('kmMaquina',this.value)"></div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div><label>Kcal — relógio</label><input type="number" value="${c.kcalRelogio||''}" oninput="setCorridaField('kcalRelogio',this.value)"></div>
+        <div><label>Kcal — esteira/bike/escada</label><input type="number" value="${c.kcalMaquina||''}" oninput="setCorridaField('kcalMaquina',this.value)"></div>
+      </div>
+    </div>
     <button class="chip" style="margin-top:10px;" onclick="setWorkoutType(''); renderCardioTab();">Desmarcar cardio de hoje</button>`;
   renderCorridaTimer();
 }
@@ -1558,7 +1596,6 @@ function corridaTick(){
       remaining -= step;
       if(corridaRun.phaseTime<=0) advanceCorridaPhase();
     }
-    if(corridaRun) speak('Voltei a acompanhar seu treino.');
   }
   renderCorridaTimer();
 }
@@ -1717,13 +1754,16 @@ function renderTreinoResumoHoje(){
   if(type==='treinoA' || type==='treinoB' || type==='treinoC'){
     const label = type==='treinoA'?'Treino A — Pernas + Core':type==='treinoB'?'Treino B — Costas + Core':'Treino C — Pernas (posterior/glúteo) + Core';
     const { totalSets, doneSets, totalKg } = treinoSessionStats(type, log);
+    const kcalTxt = log.kcalTreino ? ` · 🔥 ${log.kcalTreino} kcal` : '';
     el.innerHTML = `<div class="exercise"><div class="ex-title"><span>${label}</span><span class="muted">${doneSets}/${totalSets} séries</span></div>
-      <div class="ex-meta">Carga total registrada nas séries feitas: ${totalKg.toFixed(0)} kg somados</div></div>`;
+      <div class="ex-meta">Carga total registrada nas séries feitas: ${totalKg.toFixed(0)} kg somados${kcalTxt}</div></div>`;
   } else if(type==='treinoCasa'){
     const list = PLAN.treinoCasa;
     let done=0;
     list.forEach((ex,i)=>{ const s=(log.treinoCasa||{})['casa'+i]; if(s && s.sets[0] && s.sets[0].done) done++; });
-    el.innerHTML = `<div class="exercise"><div class="ex-title"><span>Treino Casa (Plano B)</span><span class="muted">${done}/${list.length} feitos</span></div></div>`;
+    const kcalTxt = log.kcalTreino ? ` · 🔥 ${log.kcalTreino} kcal` : '';
+    el.innerHTML = `<div class="exercise"><div class="ex-title"><span>Treino Casa (Plano B)</span><span class="muted">${done}/${list.length} feitos</span></div>
+      <div class="ex-meta">${kcalTxt.replace(' · ','')}</div></div>`;
   } else if(type==='corrida'){
     const c = log.corrida || {};
     const kmTxt = (c.kmRelogio||c.kmMaquina) ? ` · ${c.kmRelogio||c.kmMaquina}km` : '';
@@ -1989,7 +2029,7 @@ function renderCustomFoods(){
   if(!DATA.foods.length){ el.innerHTML = '<p class="muted">Nenhum alimento cadastrado ainda.</p>'; return; }
   el.innerHTML = DATA.foods.map(f=>`
     <div class="food-card"><div class="fc-row"><strong>${f.nome}</strong><button class="fi-del" onclick="deleteCustomFood('${f.id}')">✕</button></div>
-    <div class="fc-macros">${f.kcal} kcal · P${f.prot} C${f.carb} G${f.gord} (por 100g)</div></div>`).join('');
+    <div class="fc-macros">${f.kcal} kcal · Proteína ${f.prot}g · Carboidrato ${f.carb}g · Gordura ${f.gord}g (por 100g)</div></div>`).join('');
 }
 function setNotes(v){
   const log = getLog();
@@ -2025,19 +2065,34 @@ function renderPlanRef(){
 }
 
 /* ====================== TAB DIETA (referência) ====================== */
+const MEAL_ICONS = {
+  'Manhã (jejum ou leve)':'🌅',
+  'Almoço':'🍽️',
+  'Café da tarde':'☕',
+  'Janta':'🌙',
+  'Lanche da noite (se fome forte)':'🌃'
+};
 function renderCardapioRef(){
   let h='';
   MEAL_ORDER.forEach(meal=>{
-    h += `<h3>${meal}</h3><ul style="font-size:13px; line-height:1.6; padding-left:20px; margin:0 0 8px;">`;
+    h += `<div style="margin-bottom:16px;">
+      <h3 style="margin-bottom:8px;">${MEAL_ICONS[meal]||''} ${meal}</h3>`;
     PLAN.cardapioSlots[meal].forEach(slot=>{
-      const opts = slot.options.map(o=>{
+      h += `<div class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:.03em; margin:8px 0 6px;">${slot.nome}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">`;
+      slot.options.forEach(o=>{
         const m = slotMacros(o, o.gramas);
-        const gramaTxt = o.food ? ` (${o.gramas}g)` : '';
-        return `${o.nome}${gramaTxt} — ${m.kcal} kcal · P${m.prot} C${m.carb} G${m.gord}`;
-      }).join(' / ');
-      h += `<li><strong>${slot.nome}:</strong> ${opts}</li>`;
+        const gramaTxt = o.food ? `${o.gramas}g` : '';
+        h += `<div class="food-card" style="flex:1; min-width:150px; margin-bottom:0;">
+          <div class="fc-row"><strong style="font-size:13px;">${o.nome}</strong></div>
+          ${gramaTxt ? `<div class="muted" style="font-size:11px; margin-top:2px;">${gramaTxt}</div>` : ''}
+          <div class="fc-macros" style="margin-top:6px; line-height:1.5;">🔥 <strong style="color:var(--text);">${m.kcal} kcal</strong><br>
+            Proteína ${m.prot}g · Carboidrato ${m.carb}g · Gordura ${m.gord}g</div>
+        </div>`;
+      });
+      h += `</div>`;
     });
-    h += `</ul>`;
+    h += `</div>`;
   });
   h += `<p class="muted" style="margin-top:8px;">Meta diária: ~${PLAN.metas.kcal} kcal · ~${PLAN.metas.prot}g proteína. Escolha uma opção por refeição — o app soma o total automaticamente na aba Hoje.</p>`;
   document.getElementById('cardapioRef').innerHTML = h;
@@ -2230,7 +2285,40 @@ function renderPainel(){
   renderChartSono();
   renderChartCargas();
   renderCorridaHist();
+  renderTreinoHistorico();
   renderFreqGrid();
+}
+function renderTreinoHistorico(){
+  const el = document.getElementById('treinoHistorico');
+  if(!el) return;
+  const dates = allDatesSorted().filter(d=>{
+    const t = DATA.logs[d].workoutType;
+    return t && t!=='descanso';
+  }).slice(-20).reverse();
+  if(!dates.length){ el.innerHTML = 'Sem treinos registrados ainda.'; return; }
+  let h = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><tr style="color:var(--muted); text-align:left;"><th>Data</th><th>Treino</th><th>Detalhe</th><th>Kcal</th></tr>';
+  dates.forEach(d=>{
+    const log = DATA.logs[d];
+    const type = log.workoutType;
+    let detalhe='-', kcal='-';
+    if(type==='corrida'){
+      const c = log.corrida||{};
+      detalhe = `${c.equipamento||'-'} · ${c.modo||'-'} · ${c.tempo||0}min`;
+      kcal = c.kcalRelogio || c.kcalMaquina || '-';
+    } else if(type==='treinoA' || type==='treinoB' || type==='treinoC'){
+      const stats = treinoSessionStats(type, log);
+      detalhe = `${stats.doneSets}/${stats.totalSets} séries · ${stats.totalKg.toFixed(0)}kg`;
+      kcal = log.kcalTreino || '-';
+    } else if(type==='treinoCasa'){
+      const list = PLAN.treinoCasa; let done=0;
+      list.forEach((ex,i)=>{ const s=(log.treinoCasa||{})['casa'+i]; if(s && s.sets[0] && s.sets[0].done) done++; });
+      detalhe = `${done}/${list.length} feitos`;
+      kcal = log.kcalTreino || '-';
+    }
+    h += `<tr style="border-top:1px solid var(--border);"><td>${d.slice(5)}</td><td>${workoutTypeLabel(type)}</td><td>${detalhe}</td><td>${kcal}</td></tr>`;
+  });
+  h += '</table>';
+  el.innerHTML = h;
 }
 
 /* ====================== COMPARADOR SEMANA/MES ====================== */
