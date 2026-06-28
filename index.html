@@ -587,7 +587,8 @@ const PLAN = {
         { nome:'Omelete 2-3 ovos + queijo + legumes', kcal:340, prot:25, carb:5, gord:24 },
         { nome:'Frango desfiado + salada + batata doce 100g', kcal:280, prot:28, carb:22, gord:6 },
         { nome:'Iogurte natural + 2 ovos cozidos', kcal:250, prot:22, carb:8, gord:14 },
-        { nome:'Pão + queijo coalho + ovo cozido', kcal:220, prot:14, carb:16, gord:11 }
+        { nome:'Pão + queijo coalho + ovo cozido', kcal:220, prot:14, carb:16, gord:11 },
+        { nome:'Sardinha + salada + manga (4x/semana)', kcal:260, prot:26, carb:14, gord:11 }
       ]}
     ],
     'Lanche da noite (se fome forte)': [
@@ -603,16 +604,22 @@ const PLAN = {
         { nome:'Frango grelhado', food:'Frango (peito) grelhado', gramas:150 },
         { nome:'Peixe grelhado', food:'Peixe (tilápia) grelhado', gramas:180 },
         { nome:'Carne magra grelhada', food:'Carne bovina magra grelhada', gramas:150 },
-        { nome:'2 ovos cozidos', food:'Ovo cozido', gramas:100 }
+        { nome:'2 ovos cozidos', food:'Ovo cozido', gramas:100 },
+        { nome:'Carne moída ou patinho (2-3x/semana)', food:'Carne bovina moída magra grelhada', gramas:150 },
+        { nome:'Fígado bovino (2x/semana, ex: terça e sexta)', food:'Fígado bovino refogado', gramas:150 }
       ]},
       { id:'carbo', nome:'Carboidrato', options:[
-        { nome:'Batata doce', food:'Batata doce cozida', gramas:200 },
-        { nome:'Arroz branco', food:'Arroz branco cozido', gramas:150 },
-        { nome:'Batata inglesa', food:'Batata inglesa cozida', gramas:200 },
+        { nome:'Batata doce', food:'Batata doce cozida', gramas:150 },
+        { nome:'Arroz branco', food:'Arroz branco cozido', gramas:110 },
+        { nome:'Batata inglesa', food:'Batata inglesa cozida', gramas:150 },
         { nome:'Sem carboidrato', food:null, gramas:0 }
       ]},
-      { id:'salada', nome:'Salada', options:[
-        { nome:'Salada verde', food:'Salada verde (folhas/tomate)', gramas:150 },
+      { id:'feijao', nome:'Feijão (sempre com limão)', options:[
+        { nome:'Feijão com limão (1 concha)', food:'Feijão carioca cozido', gramas:80 },
+        { nome:'Sem feijão hoje', food:null, gramas:0 }
+      ]},
+      { id:'salada', nome:'Salada/legumes (à vontade)', options:[
+        { nome:'Salada verde / brócolis / cenoura / beterraba crua', food:'Salada verde (folhas/tomate)', gramas:150 },
         { nome:'Sem salada', food:null, gramas:0 }
       ]}
     ]
@@ -656,7 +663,10 @@ const PLAN = {
     { nome:'Atum em lata (água)', kcal:116, prot:25.5, carb:0, gord:0.8 },
     { nome:'Queijo cottage', kcal:98, prot:11, carb:3.4, gord:4.3 },
     { nome:'Café (sem açúcar)', kcal:2, prot:0.1, carb:0, gord:0 },
-    { nome:'Mussarela', kcal:280, prot:18, carb:2, gord:22 }
+    { nome:'Mussarela', kcal:280, prot:18, carb:2, gord:22 },
+    { nome:'Fígado bovino refogado', kcal:175, prot:26, carb:4, gord:5 },
+    { nome:'Carne bovina moída magra grelhada', kcal:212, prot:26, carb:0, gord:11 },
+    { nome:'Sardinha em lata (água)', kcal:165, prot:20, carb:0, gord:9 }
   ]
 };
 
