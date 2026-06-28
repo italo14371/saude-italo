@@ -485,9 +485,9 @@ const PLAN = {
     { id:'nenhum', nome:'Sem jejum hoje', horas:0 }
   ],
   suplementos: [
-    { id:'beterraba', nome:'Shot de pó de beterraba' },
-    { id:'maca', nome:'Shot de maca peruana' },
-    { id:'vitC', nome:'Vitamina C' }
+    { id:'creatina', nome:'Creatina 5g' },
+    { id:'d3k2', nome:'Vitamina D3 + K2' },
+    { id:'beterraba', nome:'Shot de pó de beterraba (opcional, pré-HIIT/corrida)' }
   ],
   grade: [
     { dia:'Domingo', tipo:'descanso', desc:'Descanso (opcional: Treino Casa - Plano B)' },
@@ -2288,6 +2288,7 @@ function renderPainel(){
   renderTreinoHistorico();
   renderFreqGrid();
 }
+let treinoHistDetalheAberto = null;
 function renderTreinoHistorico(){
   const el = document.getElementById('treinoHistorico');
   if(!el) return;
@@ -2315,10 +2316,53 @@ function renderTreinoHistorico(){
       detalhe = `${done}/${list.length} feitos`;
       kcal = log.kcalTreino || '-';
     }
-    h += `<tr style="border-top:1px solid var(--border);"><td>${d.slice(5)}</td><td>${workoutTypeLabel(type)}</td><td>${detalhe}</td><td>${kcal}</td></tr>`;
+    h += `<tr style="border-top:1px solid var(--border); cursor:pointer;" onclick="toggleTreinoHistDetalhe('${d}')"><td>${d.slice(5)}</td><td>${workoutTypeLabel(type)}</td><td>${detalhe}</td><td>${kcal}</td></tr>`;
+    if(treinoHistDetalheAberto===d){
+      h += `<tr><td colspan="4" style="padding:0;">${treinoHistDetalheHtml(d, log)}</td></tr>`;
+    }
   });
   h += '</table>';
   el.innerHTML = h;
+}
+function toggleTreinoHistDetalhe(d){
+  treinoHistDetalheAberto = (treinoHistDetalheAberto===d) ? null : d;
+  renderTreinoHistorico();
+}
+function treinoHistDetalheHtml(d, log){
+  const type = log.workoutType;
+  let inner = '';
+  if(type==='treinoA' || type==='treinoB' || type==='treinoC'){
+    const list = PLAN[type];
+    inner = list.map(ex=>{
+      const data = (log.exercises||{})[ex.id];
+      if(!data) return `<div class="ex-meta">${ex.nome} — não registrado</div>`;
+      if(data.skip) return `<div class="ex-meta">⏭ ${data.sub||ex.nome} — pulado</div>`;
+      const sets = (data.sets||[]).slice(0, ex.series).map((s,i)=>{
+        if(!s) return `Série ${i+1}: —`;
+        if(ex.campos==='pranchaglu') return `Série ${i+1}: ${s.tempo||0}s prancha + ${s.gluReps||0} glúteo ${s.done?'✓':''}`;
+        return `Série ${i+1}: ${s.peso||0}kg x ${s.reps||0} ${s.done?'✓':''}`;
+      }).join(' · ');
+      return `<div class="ex-meta"><strong style="color:var(--text);">${data.sub||ex.nome}</strong><br>${sets}</div>`;
+    }).join('<hr style="border-color:var(--border); margin:6px 0;">');
+    const extras = log.extraExercises||[];
+    if(extras.length){
+      inner += '<hr style="border-color:var(--border); margin:6px 0;">' + extras.map(ex=>{
+        const sets = ex.sets.map((s,i)=>`Série ${i+1}: ${s.peso||0}kg x ${s.reps||0} ${s.done?'✓':''}`).join(' · ');
+        return `<div class="ex-meta"><strong style="color:var(--text);">➕ ${ex.nome}</strong><br>${sets}</div>`;
+      }).join('<hr style="border-color:var(--border); margin:6px 0;">');
+    }
+  } else if(type==='treinoCasa'){
+    inner = PLAN.treinoCasa.map((ex,i)=>{
+      const data = (log.treinoCasa||{})['casa'+i];
+      const done = data && data.sets[0] && data.sets[0].done;
+      const skip = data && data.skip;
+      return `<div class="ex-meta">${skip?'⏭':(done?'✓':'—')} ${ex.nome}</div>`;
+    }).join('');
+  } else if(type==='corrida'){
+    const c = log.corrida||{};
+    inner = `<div class="ex-meta">Equipamento: ${c.equipamento||'-'}<br>Modo: ${c.modo||'-'}<br>Tempo: ${c.tempo||0} min<br>Inclinação: ${c.inclinacao||0}%<br>Km — relógio: ${c.kmRelogio||'-'} · esteira/bike/escada: ${c.kmMaquina||'-'}<br>Kcal — relógio: ${c.kcalRelogio||'-'} · esteira/bike/escada: ${c.kcalMaquina||'-'}${c.blocosFeitos?'<br>Blocos de trote/caminhada concluídos: '+c.blocosFeitos:''}</div>`;
+  }
+  return `<div class="exercise" style="margin:6px 0 10px;">${inner||'<div class="ex-meta">Sem detalhes registrados.</div>'}</div>`;
 }
 
 /* ====================== COMPARADOR SEMANA/MES ====================== */
