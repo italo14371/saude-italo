@@ -933,6 +933,37 @@ function maxFieldForExercise(exId, field, excludeKey){
 function maxPesoForExercise(exId){
   return maxFieldForExercise(exId, 'peso');
 }
+function lastPesoForExercise(exId, excludeKey){
+  let lastKey = null, lastVal = null;
+  Object.entries(DATA.logs).forEach(([key,log])=>{
+    if(excludeKey && key===excludeKey) return;
+    const data = log.exercises && log.exercises[exId];
+    if(!data) return;
+    const sets = (data.sets||[]).filter(s=>s && s.peso);
+    if(!sets.length) return;
+    if(!lastKey || key>lastKey){
+      lastKey = key;
+      lastVal = Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+    }
+  });
+  return lastVal;
+}
+function lastPesoForExtraName(nome, excludeKey){
+  let lastKey = null, lastVal = null;
+  Object.entries(DATA.logs).forEach(([key,log])=>{
+    if(excludeKey && key===excludeKey) return;
+    (log.extraExercises||[]).forEach(ex=>{
+      if(ex.nome!==nome) return;
+      const sets = (ex.sets||[]).filter(s=>s && s.peso);
+      if(!sets.length) return;
+      if(!lastKey || key>lastKey){
+        lastKey = key;
+        lastVal = Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+      }
+    });
+  });
+  return lastVal;
+}
 
 /* ====================== EXERCÍCIOS EXTRAS (fora do plano do dia) ====================== */
 function renderExtraExercises(log){
@@ -993,7 +1024,8 @@ function addExtraExercise(){
   if(!nome) return;
   const log = getLog();
   log.extraExercises = log.extraExercises || [];
-  log.extraExercises.push({ id:'extra_'+Date.now(), nome, sets:[{peso:'',reps:'',done:false,manualPeso:false}] });
+  const suggested = lastPesoForExtraName(nome, todayKey());
+  log.extraExercises.push({ id:'extra_'+Date.now(), nome, sets:[{peso: suggested!=null?String(suggested):'', reps:'', done:false, manualPeso:false}] });
   saveData();
   renderWorkoutArea(); renderTreinoResumoHoje();
 }
@@ -1103,6 +1135,16 @@ function exerciseRow(exId, exDef, storeObj, kind){
     html += `</div>`;
   } else if(kind==='carga'){
     const tk = todayKey();
+    if(!data.sets.some(s=>s && s.peso)){
+      const suggested = lastPesoForExercise(exId, tk);
+      if(suggested!=null){
+        for(let i=0;i<n;i++){
+          if(!data.sets[i]) data.sets[i] = defaultSet(exDef);
+          if(!data.sets[i].peso) data.sets[i].peso = String(suggested);
+        }
+        saveData();
+      }
+    }
     const prHist = maxFieldForExercise(exId, 'peso', tk);
     const prToday = maxPesoForExercise(exId);
     html += `<div class="sets">`;
