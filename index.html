@@ -1273,6 +1273,12 @@ function treinoSessionStats(type, log){
       if(s && s.done){ doneSets++; if(s.peso) totalKg += parseFloat(s.peso)||0; }
     }
   });
+  (log.extraExercises||[]).forEach(ex=>{
+    ex.sets.forEach(s=>{
+      totalSets++;
+      if(s.done){ doneSets++; if(s.peso) totalKg += parseFloat(s.peso)||0; }
+    });
+  });
   return { totalSets, doneSets, totalKg };
 }
 function renderWorkoutArea(){
