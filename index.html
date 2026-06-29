@@ -76,7 +76,7 @@
   .set-row .ok{width:38px; height:38px; border-radius:8px; border:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;}
   .set-row .ok.done{background:rgba(74,222,128,.2); border-color:var(--accent); color:var(--accent);}
 
-  .rest-bar{display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(74,222,128,.12); border:1px solid var(--accent); border-radius:10px; padding:8px 12px; margin-bottom:10px;}
+  .rest-bar{display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(74,222,128,.12); border:1px solid var(--accent); border-radius:10px; padding:8px 12px; margin-bottom:10px; position:sticky; top:6px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,.35);}
   .rest-bar .rest-time{font-size:20px; font-weight:700; color:var(--accent);}
   .rest-actions{display:flex; gap:6px; flex-wrap:wrap;}
   .rest-actions button{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 10px; font-size:12px;}
@@ -509,7 +509,9 @@ const PLAN = {
       alternativas:['Opcional, se a máquina estiver livre'] },
     { id:'core', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12', campos:'pranchaglu',
       alternativas:['Abdominal Isométrico','Hip Thrust (carga leve)'],
-      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
+      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' },
+    { id:'alongamento', nome:'Alongamento final', series:1, reps:'', desc:'Pernas e lombar, ~3-5 min', campos:'check',
+      instrucao:'Alongamento de quadríceps (em pé, puxe o calcanhar em direção ao glúteo), isquiotibiais (sentado ou em pé, estique a perna e alcance o pé sem forçar), e postura da criança pra lombar (sente nos calcanhares, estique os braços pra frente no chão). Segure cada um por 20-30s, sem dor.' }
   ],
   treinoB: [
     { id:'remadabaixa', nome:'Remada Baixa Neutra / Puxada na Polia', series:3, reps:12,
@@ -522,7 +524,9 @@ const PLAN = {
       alternativas:['Remada Baixa Neutra'] },
     { id:'coreb', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12', campos:'pranchaglu',
       alternativas:['Abdominal Isométrico'],
-      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
+      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' },
+    { id:'alongamentob', nome:'Alongamento final', series:1, reps:'', desc:'Costas e ombro, ~3-5 min', campos:'check',
+      instrucao:'Alongamento de trapézio (incline a cabeça pro lado, orelha em direção ao ombro, sem forçar), alongamento de costas/dorsal (abrace os joelhos no chão e arredonde a coluna), e mobilidade de ombro leve. Segure cada um por 20-30s, sem dor.' }
   ],
   treinoC: [
     { id:'flexorac', nome:'Cadeira Flexora (posterior)', series:3, reps:12,
@@ -536,7 +540,9 @@ const PLAN = {
       alternativas:[] },
     { id:'corec', nome:'Core: Prancha + Ponte de Glúteo', series:3, reps:'20-30s / 12', campos:'pranchaglu',
       alternativas:['Abdominal Isométrico'],
-      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' }
+      instrucao:'Cada uma das 3 séries é uma combinação dos dois exercícios, na sequência, sem descansar entre eles: primeiro prancha — apoie nos antebraços e pontas dos pés, corpo reto da cabeça aos calcanhares, abdômen contraído, sem deixar o quadril cair ou subir — mantenha por 20 a 30 segundos. Em seguida, sem pausa, faça ponte de glúteo: deite de barriga para cima, pés apoiados no chão, joelhos dobrados, suba o quadril apertando o glúteo no topo e desça controlado — são 12 repetições. Só depois dessa combinação completa é que você descansa antes de repetir.' },
+    { id:'alongamentoc', nome:'Alongamento final', series:1, reps:'', desc:'Pernas e glúteo, ~3-5 min', campos:'check',
+      instrucao:'Alongamento de glúteo (sentado, cruze uma perna sobre a outra e incline o tronco pra frente), isquiotibiais e quadríceps. Segure cada um por 20-30s, sem dor.' }
   ],
   // Banco de exercícios por grupo muscular, pra escolher exercícios extras sem precisar saber o nome de cabeça
   bancoExercicios: {
@@ -909,11 +915,15 @@ function defaultSet(exDef){
     const gluPadrao = (typeof exDef.reps==='string' && exDef.reps.includes('/')) ? exDef.reps.split('/')[1].trim() : '';
     return { completa:true, tempo:'', gluReps:gluPadrao, done:false };
   }
+  if(exDef.campos==='check'){
+    return { done:false };
+  }
   return { peso:'', reps: typeof exDef.reps==='number' ? exDef.reps : '', done:false, manualPeso:false };
 }
-function maxFieldForExercise(exId, field){
+function maxFieldForExercise(exId, field, excludeKey){
   let max = 0;
-  Object.values(DATA.logs).forEach(log=>{
+  Object.entries(DATA.logs).forEach(([key,log])=>{
+    if(excludeKey && key===excludeKey) return;
     const data = log.exercises && log.exercises[exId];
     if(!data) return;
     data.sets.forEach(s=>{ const v = parseFloat(s[field])||0; if(v>max) max=v; });
@@ -934,7 +944,7 @@ function renderExtraExercises(log){
     const doneCount = ex.sets.filter(s=>s.done).length;
     const allDone = ex.sets.length>0 && doneCount===ex.sets.length;
     h += `<div class="exercise ${allDone?'exercise-done':''}" style="margin-top:8px;">
-      <div class="ex-title"><span>${ex.nome}</span>${allDone?'<span class="ex-done-badge">✓ Finalizado</span>':''}<button class="fi-del" onclick="removeExtraExercise('${ex.id}')">✕</button></div>
+      <div class="ex-title"><span>${ex.nome}</span>${allDone?'<span class="ex-done-badge">🏋🏽‍♀️ Finalizado</span>':''}<button class="fi-del" onclick="removeExtraExercise('${ex.id}')">✕</button></div>
       <div class="sets">`;
     ex.sets.forEach((s,i)=>{
       h += `<div class="set-row">
@@ -1013,16 +1023,14 @@ function setExtraSetField(id, idx, field, val){
   if(!ex.sets[idx]) ex.sets[idx] = {peso:'',reps:'',done:false,manualPeso:false};
   ex.sets[idx][field] = val;
   if(field==='peso'){
-    if(idx===0){
-      for(let i=1;i<ex.sets.length;i++){
-        if(!ex.sets[i].manualPeso){
-          ex.sets[i].peso = val;
-          const inp = document.getElementById(`pesoExtra-${id}-${i}`);
-          if(inp) inp.value = val;
-        }
+    ex.sets[idx].manualPeso = true;
+    for(let i=idx+1;i<ex.sets.length;i++){
+      if(!ex.sets[i]) ex.sets[i] = {peso:'',reps:'',done:false,manualPeso:false};
+      if(!ex.sets[i].manualPeso){
+        ex.sets[i].peso = val;
+        const inp = document.getElementById(`pesoExtra-${id}-${i}`);
+        if(inp) inp.value = val;
       }
-    } else {
-      ex.sets[idx].manualPeso = true;
     }
   }
   saveData(); renderTreinoResumoHoje();
@@ -1044,7 +1052,7 @@ function exerciseRow(exId, exDef, storeObj, kind){
   const allDone = n>0 && doneCount===n;
   const skipped = !!data.skip;
   let html = `<div class="exercise ${allDone?'exercise-done':''} ${skipped?'exercise-skipped':''}" id="exrow-${exId}">
-    <div class="ex-title"><span>${data.sub || exDef.nome}</span>${allDone?'<span class="ex-done-badge">✓ Finalizado</span>':''}${skipped?'<span class="ex-skip-badge">Pulado hoje</span>':''}</div>
+    <div class="ex-title"><span>${data.sub || exDef.nome}</span>${allDone?'<span class="ex-done-badge">🏋🏽‍♀️ Finalizado</span>':''}${skipped?'<span class="ex-skip-badge">Pulado hoje</span>':''}</div>
     <div class="ex-meta">${exDef.series ? exDef.series+'x'+exDef.reps : exDef.desc||''}</div>`;
   if(exDef.obs) html += `<div class="ex-obs">⚠️ ${exDef.obs}</div>`;
   if(exDef.instrucao){
@@ -1065,36 +1073,50 @@ function exerciseRow(exId, exDef, storeObj, kind){
     });
     html += `</select>`;
   }
-  if(kind==='carga' && exDef.campos==='pranchaglu'){
-    const prTempo = maxFieldForExercise(exId, 'tempo');
+  if(kind==='carga' && exDef.campos==='check'){
+    const s = data.sets[0] || defaultSet(exDef);
+    html += `<div class="sets"><div class="set-row">
+      <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',0)" style="width:38px;">${s.done?'✓':''}</div>
+      <span style="font-size:13px; color:var(--muted);">Feito</span>
+    </div></div>`;
+  } else if(kind==='carga' && exDef.campos==='pranchaglu'){
+    const tk = todayKey();
+    const prTempoHist = maxFieldForExercise(exId, 'tempo', tk);
+    const prTempoToday = maxFieldForExercise(exId, 'tempo');
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
       const s = data.sets[i] || defaultSet(exDef);
       const tempo = parseFloat(s.tempo)||0;
-      const isPR = tempo>0 && prTempo>0 && tempo>=prTempo;
+      const isRecord = tempo>0 && tempo>prTempoHist;
+      const isTie = !isRecord && tempo>0 && prTempoToday>0 && tempo>=prTempoToday;
+      const stopwatchOn = corridaPlankWatch && corridaPlankWatch.exId===exId && corridaPlankWatch.idx===i;
       html += `<div class="set-row" style="flex-wrap:wrap;">
         <div class="set-idx">${i+1}</div>
         <label style="display:flex; align-items:center; gap:4px; font-size:11px; flex:none; color:var(--muted);" title="Prancha completa = apoiando só nos pés, sem o joelho no chão"><input type="checkbox" style="width:auto;" ${s.completa!==false?'checked':''} onchange="setSetField('${exId}','${kind}',${i},'completa',this.checked)">Prancha completa</label>
-        <input type="number" placeholder="seg. prancha" value="${s.tempo}" oninput="setSetField('${exId}','${kind}',${i},'tempo',this.value)">
+        <input type="number" id="tempo-${exId}-${i}" placeholder="seg. prancha" value="${s.tempo}" oninput="setSetField('${exId}','${kind}',${i},'tempo',this.value)">
+        <button class="ex-skip-btn" style="flex:none; padding:6px 8px;" onclick="togglePlankWatch('${exId}',${i})">${stopwatchOn?'⏹ Parar':'⏱ Cronômetro'}</button>
         <input type="number" placeholder="reps glúteo" value="${s.gluReps}" oninput="setSetField('${exId}','${kind}',${i},'gluReps',this.value)">
         <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',${i})">${s.done?'✓':''}</div>
-        ${isPR ? `<span title="Novo recorde de tempo de prancha!" style="font-size:16px;">🏆</span>` : ''}
+        ${isRecord ? `<span title="Novo recorde de tempo de prancha!" style="font-size:16px;">🏆</span>` : isTie ? `<span title="Igualou o melhor tempo de hoje" style="font-size:16px;">✅</span>` : ''}
       </div>`;
     }
     html += `</div>`;
   } else if(kind==='carga'){
-    const pr = maxPesoForExercise(exId);
+    const tk = todayKey();
+    const prHist = maxFieldForExercise(exId, 'peso', tk);
+    const prToday = maxPesoForExercise(exId);
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
       const s = data.sets[i] || defaultSet(exDef);
       const peso = parseFloat(s.peso)||0;
-      const isPR = peso>0 && pr>0 && peso>=pr;
+      const isRecord = peso>0 && peso>prHist;
+      const isTie = !isRecord && peso>0 && prToday>0 && peso>=prToday;
       html += `<div class="set-row">
         <div class="set-idx">${i+1}</div>
         <input type="number" id="peso-${exId}-${i}" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
         <input type="number" placeholder="reps" value="${s.reps}" oninput="setSetField('${exId}','${kind}',${i},'reps',this.value)">
         <div class="ok ${s.done?'done':''}" onclick="toggleSetDone('${exId}','${kind}',${i})">${s.done?'✓':''}</div>
-        ${isPR ? `<span title="Novo recorde pessoal!" style="font-size:16px;">🏆</span>` : ''}
+        ${isRecord ? `<span title="Novo recorde pessoal!" style="font-size:16px;">🏆</span>` : isTie ? `<span title="Igualou o melhor peso de hoje" style="font-size:16px;">✅</span>` : ''}
       </div>`;
     }
     html += `</div>`;
@@ -1124,19 +1146,16 @@ function setSetField(exId, kind, idx, field, val){
   const exDef = kind==='carga' ? PLAN[log.workoutType].find(e=>(e.id||e.nome)===exId) : null;
   if(!store[exId].sets[idx]) store[exId].sets[idx] = exDef ? defaultSet(exDef) : {peso:'',reps:'',done:false,manualPeso:false};
   store[exId].sets[idx][field] = val;
-  if(field==='peso'){
-    if(idx===0 && kind==='carga'){
-      const n = exDef ? exDef.series : store[exId].sets.length;
-      for(let i=1;i<n;i++){
-        if(!store[exId].sets[i]) store[exId].sets[i] = defaultSet(exDef);
-        if(!store[exId].sets[i].manualPeso){
-          store[exId].sets[i].peso = val;
-          const inp = document.getElementById(`peso-${exId}-${i}`);
-          if(inp) inp.value = val;
-        }
+  if(field==='peso' && kind==='carga'){
+    store[exId].sets[idx].manualPeso = true;
+    const n = exDef ? exDef.series : store[exId].sets.length;
+    for(let i=idx+1;i<n;i++){
+      if(!store[exId].sets[i]) store[exId].sets[i] = defaultSet(exDef);
+      if(!store[exId].sets[i].manualPeso){
+        store[exId].sets[i].peso = val;
+        const inp = document.getElementById(`peso-${exId}-${i}`);
+        if(inp) inp.value = val;
       }
-    } else if(idx>0){
-      store[exId].sets[idx].manualPeso = true;
     }
   }
   saveData(); renderTreinoResumoHoje();
@@ -1175,6 +1194,28 @@ function setKcalTreino(val){
   const log = getLog();
   log.kcalTreino = val ? parseFloat(val) : null;
   saveData(); renderTreinoResumoHoje();
+}
+
+/* ====================== CRONÔMETRO DE PRANCHA ====================== */
+let corridaPlankWatch = null; // {exId, idx, kind, startedAt, interval}
+function togglePlankWatch(exId, idx, kind){
+  kind = kind || 'carga';
+  if(corridaPlankWatch && corridaPlankWatch.exId===exId && corridaPlankWatch.idx===idx){
+    clearInterval(corridaPlankWatch.interval);
+    corridaPlankWatch = null;
+    renderWorkoutArea();
+    return;
+  }
+  if(corridaPlankWatch) clearInterval(corridaPlankWatch.interval);
+  const startedAt = Date.now();
+  corridaPlankWatch = { exId, idx, kind, startedAt, interval: null };
+  corridaPlankWatch.interval = setInterval(()=>{
+    const secs = Math.round((Date.now()-startedAt)/1000);
+    setSetField(exId, kind, idx, 'tempo', String(secs));
+    const inp = document.getElementById(`tempo-${exId}-${idx}`);
+    if(inp) inp.value = secs;
+  }, 1000);
+  renderWorkoutArea();
 }
 
 /* ====================== TIMER DE DESCANSO ====================== */
@@ -1244,8 +1285,12 @@ function renderWorkoutArea(){
     log.exercises = log.exercises || {};
     log.extraExercises = log.extraExercises || [];
     let h='';
-    PLAN[log.workoutType].forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
+    const planList = PLAN[log.workoutType];
+    const mainList = planList.filter(ex=>ex.campos!=='pranchaglu' && ex.campos!=='check');
+    const tailList = planList.filter(ex=>ex.campos==='pranchaglu' || ex.campos==='check');
+    mainList.forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
     h += renderExtraExercises(log);
+    tailList.forEach(ex=> h += exerciseRow(ex.id, ex, log.exercises, 'carga'));
     area.innerHTML = h;
     const stats = treinoSessionStats(log.workoutType, log);
     const pct = stats.totalSets>0 ? Math.round(stats.doneSets/stats.totalSets*100) : 0;
