@@ -707,11 +707,20 @@ function todayKeyOf(d){
 }
 function getLog(dateKey){
   dateKey = dateKey || todayKey();
-  if(!DATA.logs[dateKey]) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, mealsExtra:{}, kcal:null, jejum:'', jejumFim:'', suplementos:{}, notes:'' };
+  const isNew = !DATA.logs[dateKey];
+  if(isNew) DATA.logs[dateKey] = { water:0, weight:null, sono:{dormiu:'',acordou:'',qualidade:''}, workoutType:'', exercises:{}, corrida:{}, treinoCasa:{}, meals:{}, cardapioSel:{}, mealsExtra:{}, kcal:null, jejum:'', jejumFim:'', suplementos:{}, notes:'' };
   if(!DATA.logs[dateKey].sono) DATA.logs[dateKey].sono = {dormiu:'',acordou:'',qualidade:''};
   if(!DATA.logs[dateKey].cardapioSel) DATA.logs[dateKey].cardapioSel = {};
   if(!DATA.logs[dateKey].mealsExtra) DATA.logs[dateKey].mealsExtra = {};
   if(!DATA.logs[dateKey].suplementos) DATA.logs[dateKey].suplementos = {};
+  if(isNew && dateKey===todayKey()){
+    const checkDia = DATA.settings.pesoCheckDia ?? 1;
+    const isCheckDay = new Date().getDay()===Number(checkDia);
+    if(!isCheckDay){
+      const last = lastWeightEntry(true);
+      if(last) DATA.logs[dateKey].weight = last.weight;
+    }
+  }
   return DATA.logs[dateKey];
 }
 
