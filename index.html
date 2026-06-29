@@ -455,12 +455,13 @@
 
     <div class="card">
       <h2>⚙️ Dados</h2>
+      <div id="backupReminder" class="ex-obs" style="display:none; margin-bottom:8px;"></div>
       <div class="btn-row">
         <button class="chip" onclick="exportData()">Exportar JSON</button>
         <button class="chip" onclick="document.getElementById('importFile').click()">Importar JSON</button>
         <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
       </div>
-      <p class="muted" style="margin-top:8px;">Exporte de tempos em tempos pra fazer backup ou compartilhar com o Claude pra revisar sua evolução.</p>
+      <p class="muted" style="margin-top:8px;">Exporte de tempos em tempos pra fazer backup ou compartilhar com o Claude pra revisar sua evolução. O navegador pode limpar os dados salvos sem aviso (já aconteceu) — exportar é a única forma de garantir que você não perde o histórico.</p>
     </div>
 
   </section>
@@ -2468,6 +2469,7 @@ function renderFreqGrid(){
 
 function renderPainel(){
   renderSettings();
+  renderBackupReminder();
   renderBadges();
   renderComparador();
   renderChartPeso();
@@ -2639,6 +2641,23 @@ function exportData(){
   a.href = url; a.download = 'saude-italo-'+todayKey()+'.json';
   a.click();
   URL.revokeObjectURL(url);
+  localStorage.setItem('saudeItalo_lastExportAt', Date.now());
+  renderBackupReminder();
+}
+function renderBackupReminder(){
+  const el = document.getElementById('backupReminder');
+  if(!el) return;
+  const last = parseFloat(localStorage.getItem('saudeItalo_lastExportAt'));
+  const days = last ? Math.floor((Date.now()-last)/86400000) : null;
+  if(days==null){
+    el.innerHTML = `⚠️ Você nunca exportou um backup ainda. O navegador pode limpar os dados salvos sem aviso — exporte agora pra não correr risco.`;
+    el.style.display = 'block';
+  } else if(days>=7){
+    el.innerHTML = `⚠️ Já fazem ${days} dias desde o último backup exportado. Exporte de novo pra não correr risco de perder dados.`;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
 }
 function importData(event){
   const file = event.target.files[0];
