@@ -774,6 +774,7 @@ function clearSection(section){
     renderMeals();
   } else if(section==='treino'){
     log.workoutType = ''; log.exercises = {}; log.treinoCasa = {}; log.corrida = {}; log.extraExercises = [];
+    log.treinoInicio = null; log.treinoFim = null; log.treinoFinalizado = false;
     renderWorkoutArea(); renderTreinoResumoHoje(); renderCardioTab();
   }
   saveData();
@@ -1115,12 +1116,16 @@ function exerciseRow(exId, exDef, storeObj, kind){
     const tk = todayKey();
     const prTempoHist = maxFieldForExercise(exId, 'tempo', tk);
     const prTempoToday = maxFieldForExercise(exId, 'tempo');
+    const tempoBeatsHistory = prTempoToday > prTempoHist;
+    let tempoTrophyGiven = false;
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
       const s = data.sets[i] || defaultSet(exDef);
       const tempo = parseFloat(s.tempo)||0;
-      const isRecord = tempo>0 && tempo>prTempoHist;
-      const isTie = !isRecord && tempo>0 && prTempoToday>0 && tempo>=prTempoToday;
+      const isTopToday = tempo>0 && prTempoToday>0 && tempo>=prTempoToday;
+      const isRecord = tempoBeatsHistory && isTopToday && !tempoTrophyGiven;
+      if(isRecord) tempoTrophyGiven = true;
+      const isTie = !isRecord && isTopToday;
       const stopwatchOn = corridaPlankWatch && corridaPlankWatch.exId===exId && corridaPlankWatch.idx===i;
       html += `<div class="set-row" style="flex-wrap:wrap;">
         <div class="set-idx">${i+1}</div>
@@ -1147,12 +1152,16 @@ function exerciseRow(exId, exDef, storeObj, kind){
     }
     const prHist = maxFieldForExercise(exId, 'peso', tk);
     const prToday = maxPesoForExercise(exId);
+    const pesoBeatsHistory = prToday > prHist;
+    let pesoTrophyGiven = false;
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
       const s = data.sets[i] || defaultSet(exDef);
       const peso = parseFloat(s.peso)||0;
-      const isRecord = peso>0 && peso>prHist;
-      const isTie = !isRecord && peso>0 && prToday>0 && peso>=prToday;
+      const isTopToday = peso>0 && prToday>0 && peso>=prToday;
+      const isRecord = pesoBeatsHistory && isTopToday && !pesoTrophyGiven;
+      if(isRecord) pesoTrophyGiven = true;
+      const isTie = !isRecord && isTopToday;
       html += `<div class="set-row">
         <div class="set-idx">${i+1}</div>
         <input type="number" id="peso-${exId}-${i}" placeholder="kg" value="${s.peso}" oninput="setSetField('${exId}','${kind}',${i},'peso',this.value)">
@@ -1303,6 +1312,46 @@ function renderRestTimer(){
     </div>`;
 }
 
+function startTreinoSessao(){
+  const log = getLog();
+  log.treinoInicio = Date.now();
+  log.treinoFim = null;
+  log.treinoFinalizado = false;
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+}
+function finishTreinoSessao(){
+  const log = getLog();
+  if(!log.treinoInicio) log.treinoInicio = Date.now();
+  log.treinoFim = Date.now();
+  log.treinoFinalizado = true;
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+}
+function resetTreinoSessao(){
+  if(!confirm('Apagar o registro de início/fim deste treino?')) return;
+  const log = getLog();
+  log.treinoInicio = null; log.treinoFim = null; log.treinoFinalizado = false;
+  saveData(); renderWorkoutArea(); renderTreinoResumoHoje();
+}
+function treinoSessaoHtml(log){
+  const fmt = ts => new Date(ts).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  if(log.treinoFinalizado && log.treinoInicio && log.treinoFim){
+    const minutos = Math.round((log.treinoFim - log.treinoInicio)/60000);
+    return `<div class="row" style="margin-top:10px; align-items:center;">
+      <div style="flex:1;"><span class="ex-done-badge">🏋🏽‍♀️ Treino realizado</span> <span class="muted">${fmt(log.treinoInicio)} → ${fmt(log.treinoFim)} (${minutos} min)</span></div>
+      <button class="ex-skip-btn" onclick="resetTreinoSessao()">↩ Desfazer</button>
+    </div>`;
+  }
+  if(log.treinoInicio){
+    return `<div class="row" style="margin-top:10px; align-items:center;">
+      <div class="muted" style="flex:1;">Treino iniciado às ${fmt(log.treinoInicio)}</div>
+      <button class="chip primary" onclick="finishTreinoSessao()">🏁 Finalizar treino</button>
+    </div>`;
+  }
+  return `<div class="row" style="margin-top:10px;">
+    <button class="chip primary" onclick="startTreinoSessao()">▶ Iniciar treino</button>
+    <button class="chip" onclick="finishTreinoSessao()">✓ Marcar como realizado</button>
+  </div>`;
+}
 function treinoSessionStats(type, log){
   const list = (PLAN[type] || []).filter(ex=>ex.campos!=='check');
   let totalSets=0, doneSets=0, totalKg=0;
@@ -1350,6 +1399,7 @@ function renderWorkoutArea(){
       <div class="row" style="margin-top:10px; text-align:left;">
         <div><label>🔥 Kcal estimadas (relógio/app) — registre depois do treino</label><input type="number" value="${log.kcalTreino||''}" oninput="setKcalTreino(this.value)"></div>
       </div>
+      ${treinoSessaoHtml(log)}
     </div>`;
   } else if(log.workoutType==='treinoCasa'){
     log.treinoCasa = log.treinoCasa || {};
@@ -1360,6 +1410,7 @@ function renderWorkoutArea(){
       <div class="row" style="text-align:left;">
         <div><label>🔥 Kcal estimadas (relógio/app) — registre depois do treino</label><input type="number" value="${log.kcalTreino||''}" oninput="setKcalTreino(this.value)"></div>
       </div>
+      ${treinoSessaoHtml(log)}
     </div>`;
   } else if(log.workoutType==='corrida'){
     area.innerHTML = `<p class="muted">Hoje é dia de cardio 🏃 — acompanhe na aba dedicada.</p>
@@ -1848,8 +1899,9 @@ function renderTreinoResumoHoje(){
     const label = type==='treinoA'?'Treino A — Pernas + Core':type==='treinoB'?'Treino B — Costas + Core':'Treino C — Pernas (posterior/glúteo) + Core';
     const { totalSets, doneSets, totalKg } = treinoSessionStats(type, log);
     const kcalTxt = log.kcalTreino ? ` · 🔥 ${log.kcalTreino} kcal` : '';
+    const realizadoTxt = log.treinoFinalizado ? `<div class="ex-meta">🏋🏽‍♀️ Treino marcado como realizado</div>` : '';
     el.innerHTML = `<div class="exercise"><div class="ex-title"><span>${label}</span><span class="muted">${doneSets}/${totalSets} séries</span></div>
-      <div class="ex-meta">Carga total registrada nas séries feitas: ${totalKg.toFixed(0)} kg somados${kcalTxt}</div></div>`;
+      <div class="ex-meta">Carga total registrada nas séries feitas: ${totalKg.toFixed(0)} kg somados${kcalTxt}</div>${realizadoTxt}</div>`;
   } else if(type==='treinoCasa'){
     const list = PLAN.treinoCasa;
     let done=0;
