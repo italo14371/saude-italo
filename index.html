@@ -943,6 +943,21 @@ function maxFieldForExercise(exId, field, excludeKey){
 function maxPesoForExercise(exId){
   return maxFieldForExercise(exId, 'peso');
 }
+const MIN_REPS_PARA_RECORDE = 8;
+function maxPesoValidoForExercise(exId, excludeKey){
+  let max = 0;
+  Object.entries(DATA.logs).forEach(([key,log])=>{
+    if(excludeKey && key===excludeKey) return;
+    const data = log.exercises && log.exercises[exId];
+    if(!data) return;
+    (data.sets||[]).forEach(s=>{
+      const peso = parseFloat(s && s.peso)||0;
+      const reps = parseFloat(s && s.reps)||0;
+      if(peso>0 && reps>=MIN_REPS_PARA_RECORDE && peso>max) max=peso;
+    });
+  });
+  return max;
+}
 function lastPesoForExercise(exId, excludeKey){
   let lastKey = null, lastVal = null;
   Object.entries(DATA.logs).forEach(([key,log])=>{
@@ -1159,15 +1174,16 @@ function exerciseRow(exId, exDef, storeObj, kind){
         saveData();
       }
     }
-    const prHist = maxFieldForExercise(exId, 'peso', tk);
-    const prToday = maxPesoForExercise(exId);
+    const prHist = maxPesoValidoForExercise(exId, tk);
+    const prToday = maxPesoValidoForExercise(exId);
     const pesoBeatsHistory = prToday > prHist;
     let pesoTrophyGiven = false;
     html += `<div class="sets">`;
     for(let i=0;i<n;i++){
       const s = data.sets[i] || defaultSet(exDef);
       const peso = parseFloat(s.peso)||0;
-      const isTopToday = peso>0 && prToday>0 && peso>=prToday;
+      const repsOk = (parseFloat(s.reps)||0) >= MIN_REPS_PARA_RECORDE;
+      const isTopToday = peso>0 && repsOk && prToday>0 && peso>=prToday;
       const isRecord = pesoBeatsHistory && isTopToday && !pesoTrophyGiven;
       if(isRecord) pesoTrophyGiven = true;
       const isTie = !isRecord && isTopToday;
