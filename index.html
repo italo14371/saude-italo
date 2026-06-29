@@ -1262,7 +1262,7 @@ function renderRestTimer(){
 }
 
 function treinoSessionStats(type, log){
-  const list = PLAN[type] || [];
+  const list = (PLAN[type] || []).filter(ex=>ex.campos!=='check');
   let totalSets=0, doneSets=0, totalKg=0;
   list.forEach(ex=>{
     const data = (log.exercises||{})[ex.id];
