@@ -2268,18 +2268,38 @@ function renderChartCardioEvol(){
 }
 function fillExerciseSelect(){
   const sel = document.getElementById('exSelect');
-  const all = PLAN.treinoA.concat(PLAN.treinoB, PLAN.treinoC);
-  sel.innerHTML = all.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  const all = PLAN.treinoA.concat(PLAN.treinoB, PLAN.treinoC).filter(e=>e.campos!=='pranchaglu' && e.campos!=='check');
+  let h = all.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  const extraNames = new Set();
+  Object.values(DATA.logs).forEach(log=>{
+    (log.extraExercises||[]).forEach(ex=>{ if(ex.sets.some(s=>s.peso)) extraNames.add(ex.nome); });
+  });
+  if(extraNames.size){
+    h += [...extraNames].map(n=>`<option value="extra::${n}">➕ ${n}</option>`).join('');
+  }
+  sel.innerHTML = h;
 }
 
 function renderChartCargas(){
   const exId = document.getElementById('exSelect').value;
-  const dates = allDatesSorted().filter(d=> DATA.logs[d].exercises && DATA.logs[d].exercises[exId] && DATA.logs[d].exercises[exId].sets.some(s=>s.peso));
+  let dates, getMax;
+  if(exId.startsWith('extra::')){
+    const nome = exId.slice(7);
+    dates = allDatesSorted().filter(d=> (DATA.logs[d].extraExercises||[]).some(ex=>ex.nome===nome && ex.sets.some(s=>s.peso)));
+    getMax = d=>{
+      const ex = DATA.logs[d].extraExercises.find(ex=>ex.nome===nome);
+      const sets = ex.sets.filter(s=>s.peso);
+      return Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+    };
+  } else {
+    dates = allDatesSorted().filter(d=> DATA.logs[d].exercises && DATA.logs[d].exercises[exId] && DATA.logs[d].exercises[exId].sets.some(s=>s.peso));
+    getMax = d=>{
+      const sets = DATA.logs[d].exercises[exId].sets.filter(s=>s.peso);
+      return Math.max(...sets.map(s=>parseFloat(s.peso)||0));
+    };
+  }
   const labels = dates.map(d=>d.slice(5));
-  const values = dates.map(d=>{
-    const sets = DATA.logs[d].exercises[exId].sets.filter(s=>s.peso);
-    return Math.max(...sets.map(s=>parseFloat(s.peso)||0));
-  });
+  const values = dates.map(getMax);
   if(chartCargas) chartCargas.destroy();
   chartCargas = new Chart(document.getElementById('chartCargas'), {
     type:'line',
@@ -2328,6 +2348,7 @@ function renderPainel(){
   renderChartPeso();
   renderChartAgua();
   renderChartSono();
+  fillExerciseSelect();
   renderChartCargas();
   renderCorridaHist();
   renderTreinoHistorico();
@@ -2385,6 +2406,7 @@ function treinoHistDetalheHtml(d, log){
       const sets = (data.sets||[]).slice(0, ex.series).map((s,i)=>{
         if(!s) return `Série ${i+1}: —`;
         if(ex.campos==='pranchaglu') return `Série ${i+1}: ${s.tempo||0}s prancha + ${s.gluReps||0} glúteo ${s.done?'✓':''}`;
+        if(ex.campos==='check') return `${s.done?'✓ feito':'não feito'}`;
         return `Série ${i+1}: ${s.peso||0}kg x ${s.reps||0} ${s.done?'✓':''}`;
       }).join(' · ');
       return `<div class="ex-meta"><strong style="color:var(--text);">${data.sub||ex.nome}</strong><br>${sets}</div>`;
